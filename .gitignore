@@ -1,0 +1,4 @@
+*.o
+bsp
+ttvfs
+*.bsp
