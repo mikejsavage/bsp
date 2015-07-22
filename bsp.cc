@@ -262,20 +262,6 @@ int main() {
 
 		BSP_Renderer::render( bsp, start );
 
-		const glm::vec3 test( 353.553, -453.553, 450.000 );
-		glColor3f( 1, 1, 1 );
-		glLineWidth( 2 );
-		glBegin( GL_LINES );
-		glVertex3f( test.x, test.y, test.z + 10 );
-		glVertex3f( test.x, test.y, test.z - 10 );
-
-		glVertex3f( test.x, test.y + 10, test.z );
-		glVertex3f( test.x, test.y - 10, test.z );
-
-		glVertex3f( test.x + 10, test.y, test.z );
-		glVertex3f( test.x - 10, test.y, test.z );
-		glEnd();
-
 		glLoadIdentity();
 
 		glBegin( GL_TRIANGLE_STRIP );
