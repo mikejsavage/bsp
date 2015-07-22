@@ -1,6 +1,7 @@
 #ifndef _BSP_H_
 #define _BSP_H_
 
+#include <string>
 #include "int.h"
 
 enum BSP_Lump {
@@ -145,6 +146,8 @@ struct BSP_Intersection {
 };
 
 class BSP {
+	friend class BSP_Renderer;
+
 private:
 	char * contents;
 
@@ -184,8 +187,6 @@ private:
 	u32 num_vis;
 	BSP_Vis * vis;
 
-	void pick_color( const BSP_Face & face );
-
 	template< typename T > void load_lump( u32 & num_ts, T *& ts, BSP_Lump lump );
 
 	void trace_seg_brush( const BSP_Brush & brush, BSP_Intersection & bis );
@@ -194,15 +195,11 @@ private:
 
 	BSP_Leaf & position_to_leaf( const glm::vec3 & pos );
 
-	void render_leaf( const BSP_Leaf & leaf );
-
 public:
 	BSP( std::string filename );
 	~BSP();
 
 	bool trace_seg( const glm::vec3 & start, const glm::vec3 & end, Intersection & is );
-
-	void render( const glm::vec3 & camera );
 };
 
 #endif // _BSP_H_

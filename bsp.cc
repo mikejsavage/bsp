@@ -1,17 +1,16 @@
 #include <iostream>
 #include <fstream>
 #include <math.h>
-#include <string.h>
-
-#include <glm/glm.hpp>
 
 #include <GL/glu.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
-#include "stb_easy_font.h"
+#include "int.h"
 #include "gl.h"
 #include "bsp.h"
-#include "int.h"
+#include "bsp_renderer.h"
+#include "stb_easy_font.h"
 
 const float EPSILON = 1.0 / 32.0;
 
@@ -43,54 +42,40 @@ float point_plane_distance( const glm::vec3 & point, const glm::vec3 & normal, f
 	return glm::dot( point, normal ) - d;
 }
 
-void BSP::pick_color( const BSP_Face & face ) {
-	if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_olive033") == 0) {
-		glColor3f(0, 0.33, 0);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_olive066") == 0) {
-		glColor3f(0, 0.66, 0);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_olive100") == 0) {
-		glColor3f(0, 1, 0);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_olive100_fade") == 0) {
-		glColor3f(0.25, 1, 0.25);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_red100_fade") == 0) {
-		glColor3f(1, 0.25, 0.25);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_red100") == 0) {
-		glColor3f(1, 0, 0);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_red066") == 0) {
-		glColor3f(0.66, 0, 0);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_red033") == 0) {
-		glColor3f(0.33, 0, 0);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_purple033") == 0) {
-		glColor3f(0.33, 0, 0.33);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_purple066") == 0) {
-		glColor3f(0.66, 0, 0.66);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_purple100") == 0) {
-		glColor3f(1, 0, 1);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_purple100_fade") == 0) {
-		glColor3f(1, 0.25, 1);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_cyan033") == 0) {
-		glColor3f(0, 0.33, 0.33);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_cyan066") == 0) {
-		glColor3f(0, 0.66, 0.66);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_cyan100") == 0) {
-		glColor3f(0, 1, 1);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/wall_cyan100_fade") == 0) {
-		glColor3f(0.25, 1, 1);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/struc_lightgrey") == 0) {
-		//glColor3f(0.85, 0.85, 0.85);
-		glColor3f(0.15, 0.15, 0.15);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/struc_darkgrey") == 0) {
-		glColor3f(0.5, 0.5, 0.5);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/sky_black") == 0) {
-		glColor3f(0, 0, 0);
-	} else if(strcmp(textures[face.texture].name, "textures/acidwdm2/ink") == 0) {
-		//glColor3f(0, 0, 0);
-		glColor3f( 0, 0, 0 );
-	} else {
-		//glColor3f( 1, 1, 1 );
-		glColor3f( 0, 0, 0 );
-	}
+BSP::BSP( const std::string filename ) {
+	std::ifstream file( filename, std::ifstream::binary );
+
+	assert( file.is_open() );
+
+	file.seekg( 0, file.end );
+	ssize_t len = file.tellg();
+	file.seekg( 0, file.beg );
+
+	contents = new char[ len ];
+	file.read( contents, len );
+
+	assert( ( file.rdstate() & std::ifstream::failbit ) == 0 );
+
+	file.close();
+
+	load_lump( num_textures, textures, LUMP_TEXTURES );
+	load_lump( num_planes, planes, LUMP_PLANES );
+	load_lump( num_nodes, nodes, LUMP_NODES );
+	load_lump( num_leaves, leaves, LUMP_LEAVES );
+	load_lump( num_leaf_faces, leaf_faces, LUMP_LEAFFACES );
+	load_lump( num_leaf_brushes, leaf_brushes, LUMP_LEAFBRUSHES );
+	load_lump( num_brushes, brushes, LUMP_BRUSHES );
+	load_lump( num_brush_sides, brush_sides, LUMP_BRUSHSIDES );
+	load_lump( num_vertices, vertices, LUMP_VERTICES );
+	load_lump( num_mesh_verts, mesh_verts, LUMP_MESHVERTS );
+	load_lump( num_faces, faces, LUMP_FACES );
+	load_lump( num_vis, vis, LUMP_VISIBILITY );
 }
+
+BSP::~BSP() {
+	delete contents;
+}
+
 
 template< typename T >
 void BSP::load_lump( u32 & num_ts, T *& ts, BSP_Lump lump ) {
@@ -238,66 +223,6 @@ BSP_Leaf & BSP::position_to_leaf( const glm::vec3 & pos ) {
 	return leaves[ -( node_idx + 1 ) ];
 }
 
-void BSP::render_leaf( const BSP_Leaf & leaf ) {
-	for( u32 i = 0; i < leaf.num_faces; i++ ) {
-		const BSP_LeafFace & leaf_face = leaf_faces[ i + leaf.init_face ];
-		const BSP_Face & face = faces[ leaf_face ];
-
-		pick_color( face );
-
-		glVertexPointer( 3, GL_FLOAT, sizeof( BSP_Vertex ), &vertices[ face.init_vert ].pos );
-		glDrawElements( GL_TRIANGLES, face.num_mesh_verts, GL_UNSIGNED_INT, &mesh_verts[ face.init_mesh_vert ] );
-	}
-}
-
-BSP::BSP( const std::string filename ) {
-	std::ifstream file( filename, std::ifstream::binary );
-
-	assert( file.is_open() );
-
-	file.seekg( 0, file.end );
-	ssize_t len = file.tellg();
-	file.seekg( 0, file.beg );
-
-	contents = new char[ len ];
-	file.read( contents, len );
-
-	assert( ( file.rdstate() & std::ifstream::failbit ) == 0 );
-
-	file.close();
-
-	load_lump( num_textures, textures, LUMP_TEXTURES );
-	load_lump( num_planes, planes, LUMP_PLANES );
-	load_lump( num_nodes, nodes, LUMP_NODES );
-	load_lump( num_leaves, leaves, LUMP_LEAVES );
-	load_lump( num_leaf_faces, leaf_faces, LUMP_LEAFFACES );
-	load_lump( num_leaf_brushes, leaf_brushes, LUMP_LEAFBRUSHES );
-	load_lump( num_brushes, brushes, LUMP_BRUSHES );
-	load_lump( num_brush_sides, brush_sides, LUMP_BRUSHSIDES );
-	load_lump( num_vertices, vertices, LUMP_VERTICES );
-	load_lump( num_mesh_verts, mesh_verts, LUMP_MESHVERTS );
-	load_lump( num_faces, faces, LUMP_FACES );
-	load_lump( num_vis, vis, LUMP_VISIBILITY );
-}
-
-BSP::~BSP() {
-	delete contents;
-}
-
-void BSP::render( const glm::vec3 & camera ) {
-	// const i32 cluster = position_to_leaf( camera ).cluster;	
-
-	for( u32 i = 0; i < num_leaves; i++ ) {
-		const BSP_Leaf & leaf = leaves[ i ];
-		// const i32 other_cluster = leaf.cluster;
-		// const i32 vis_idx = cluster * num_visdata + other_cluster / 8;
-
-		// printf( "%d\n", vis_idx );
-
-		render_leaf( leaf );
-	}
-}
-
 glm::vec3 d2r( const glm::vec3 & degrees ) {
 	return degrees * static_cast< float >( M_PI / 180 );
 }
@@ -335,7 +260,7 @@ int main() {
 		glRotatef( angles.y, 0.0, 0.0, 1.0 );
 		glTranslatef( -start.x, -start.y, -start.z );
 
-		bsp.render( start );
+		BSP_Renderer::render( bsp, start );
 
 		const glm::vec3 test( 353.553, -453.553, 450.000 );
 		glColor3f( 1, 1, 1 );
