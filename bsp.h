@@ -127,7 +127,10 @@ struct BSP_Face {
 // LUMP_LIGHTGRID
 
 struct BSP_Vis {
-	u8 visdata;
+	u32 num_clusters;
+	u32 cluster_size;
+
+	u8 pvs[];
 };
 
 // LUMP_LIGHTARRAY
@@ -184,22 +187,22 @@ private:
 	u32 num_faces;
 	BSP_Face * faces;
 
-	u32 num_vis;
 	BSP_Vis * vis;
 
-	template< typename T > void load_lump( u32 & num_ts, T *& ts, BSP_Lump lump );
+	template< typename T > void load_lump( u32 & num_ts, T *& ts, const BSP_Lump lump );
+	void load_vis();
 
-	void trace_seg_brush( const BSP_Brush & brush, BSP_Intersection & bis );
-	void trace_seg_leaf( const i32 leaf_idx, BSP_Intersection & bis );
-	void trace_seg_tree( const i32 node_idx, const glm::vec3 & start, const glm::vec3 & end, const float t1, const float t2, BSP_Intersection & bis );
+	void trace_seg_brush( const BSP_Brush & brush, BSP_Intersection & bis ) const;
+	void trace_seg_leaf( const i32 leaf_idx, BSP_Intersection & bis ) const;
+	void trace_seg_tree( const i32 node_idx, const glm::vec3 & start, const glm::vec3 & end, const float t1, const float t2, BSP_Intersection & bis ) const;
 
-	BSP_Leaf & position_to_leaf( const glm::vec3 & pos );
+	BSP_Leaf & position_to_leaf( const glm::vec3 & pos ) const;
 
 public:
 	BSP( std::string filename );
 	~BSP();
 
-	bool trace_seg( const glm::vec3 & start, const glm::vec3 & end, Intersection & is );
+	bool trace_seg( const glm::vec3 & start, const glm::vec3 & end, Intersection & is ) const;
 };
 
 #endif // _BSP_H_

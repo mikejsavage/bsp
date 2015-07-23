@@ -68,15 +68,25 @@ void BSP_Renderer::render_leaf( const BSP & bsp, const BSP_Leaf & leaf ) {
 }
 
 void BSP_Renderer::render( const BSP & bsp, const glm::vec3 & camera ) {
-	// const i32 cluster = bsp.position_to_leaf( camera ).cluster;	
+	const i32 cluster = bsp.position_to_leaf( camera ).cluster;
+
+	if( cluster == -1 ) {
+		for( u32 i = 0; i < bsp.num_leaves; i++ ) {
+			const BSP_Leaf & leaf = bsp.leaves[ i ];
+			render_leaf( bsp, leaf );
+		}
+
+		return;
+	}
 
 	for( u32 i = 0; i < bsp.num_leaves; i++ ) {
 		const BSP_Leaf & leaf = bsp.leaves[ i ];
-		// const i32 other_cluster = leaf.cluster;
-		// const i32 vis_idx = cluster * num_visdata + other_cluster / 8;
 
-		// printf( "%d\n", vis_idx );
+		const i32 other_cluster = leaf.cluster;
+		const i32 pvs_idx = cluster * bsp.vis->cluster_size + other_cluster / 8;
 
-		render_leaf( bsp, leaf );
+		if( bsp.vis->pvs[ pvs_idx ] & ( 1 << other_cluster % 8 ) ) {
+			render_leaf( bsp, leaf );
+		}
 	}
 }

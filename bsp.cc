@@ -14,23 +14,32 @@
 
 const float EPSILON = 1.0 / 32.0;
 
+#define TEXT( x, y, form, ... ) \
+	do { \
+		static char buffer[ 99999 ]; \
+		static char text[ 2048 ]; \
+		sprintf( text, form, __VA_ARGS__ ); \
+		const int num_quads = stb_easy_font_print( x, y, text, NULL, buffer, sizeof( buffer ) ); \
+		glColor3f(1,1,1); \
+		glVertexPointer(2, GL_FLOAT, 16, buffer); \
+		glDrawArrays(GL_QUADS, 0, num_quads*4); \
+	} while( 0 )
+
 void glterrible() {
 	printf( "glterrible\n" );
 	GLenum err = glGetError();
-	while(err!=GL_NO_ERROR) {
-		const char * error;
+	const char * error;
 
-		switch(err) {
-			case GL_INVALID_OPERATION:      error="INVALID_OPERATION";      break;
-			case GL_INVALID_ENUM:           error="INVALID_ENUM";           break;
-			case GL_INVALID_VALUE:          error="INVALID_VALUE";          break;
-			case GL_OUT_OF_MEMORY:          error="OUT_OF_MEMORY";          break;
-			case GL_INVALID_FRAMEBUFFER_OPERATION:  error="INVALID_FRAMEBUFFER_OPERATION";  break;
-		}
-
-		printf( "GL error: %s\n", error );
-		err=glGetError();
+	switch(err) {
+		case GL_INVALID_OPERATION:      error="INVALID_OPERATION";      break;
+		case GL_INVALID_ENUM:           error="INVALID_ENUM";           break;
+		case GL_INVALID_VALUE:          error="INVALID_VALUE";          break;
+		case GL_OUT_OF_MEMORY:          error="OUT_OF_MEMORY";          break;
+		case GL_INVALID_FRAMEBUFFER_OPERATION:  error="INVALID_FRAMEBUFFER_OPERATION";  break;
+		default: error = "shit bro"; break;
 	}
+
+	printf( "GL error: %s\n", error );
 }
 
 // TODO: bit twiddling?
@@ -69,7 +78,7 @@ BSP::BSP( const std::string filename ) {
 	load_lump( num_vertices, vertices, LUMP_VERTICES );
 	load_lump( num_mesh_verts, mesh_verts, LUMP_MESHVERTS );
 	load_lump( num_faces, faces, LUMP_FACES );
-	load_lump( num_vis, vis, LUMP_VISIBILITY );
+	load_vis();
 }
 
 BSP::~BSP() {
@@ -78,7 +87,7 @@ BSP::~BSP() {
 
 
 template< typename T >
-void BSP::load_lump( u32 & num_ts, T *& ts, BSP_Lump lump ) {
+void BSP::load_lump( u32 & num_ts, T *& ts, const BSP_Lump lump ) {
 	const BSP_Header * const header = reinterpret_cast< BSP_Header * >( contents );
 	const BSP_HeaderLump & hl = header->lumps[ lump ];
 
@@ -90,7 +99,18 @@ void BSP::load_lump( u32 & num_ts, T *& ts, BSP_Lump lump ) {
 	printf( "%d: ok. off %u len %u num %u\n", lump, hl.off, hl.len, num_ts );
 }
 
-void BSP::trace_seg_brush( const BSP_Brush & brush, BSP_Intersection & bis ) {
+void BSP::load_vis() {
+	const BSP_Header * const header = reinterpret_cast< BSP_Header * >( contents );
+	const BSP_HeaderLump & hl = header->lumps[ LUMP_VISIBILITY ];
+
+	vis = reinterpret_cast< BSP_Vis * >( contents + hl.off );
+
+	assert( hl.len == 2 * sizeof( u32 ) + vis->num_clusters * vis->cluster_size );
+
+	printf( "%d: ok. off %u len %u num %u\n", LUMP_VISIBILITY, hl.off, hl.len, vis->num_clusters * vis->cluster_size );
+}
+
+void BSP::trace_seg_brush( const BSP_Brush & brush, BSP_Intersection & bis ) const {
 	float near = -1.0;
 	float far = 1.0;
 
@@ -137,7 +157,7 @@ void BSP::trace_seg_brush( const BSP_Brush & brush, BSP_Intersection & bis ) {
 	}
 }
 
-void BSP::trace_seg_leaf( const i32 leaf_idx, BSP_Intersection & bis ) {
+void BSP::trace_seg_leaf( const i32 leaf_idx, BSP_Intersection & bis ) const {
 	const BSP_Leaf & leaf = leaves[ leaf_idx ];
 
 	for( u32 i = 0; i < leaf.num_brushes; i++ ) {
@@ -150,7 +170,7 @@ void BSP::trace_seg_leaf( const i32 leaf_idx, BSP_Intersection & bis ) {
 	}
 }
 
-void BSP::trace_seg_tree( const i32 node_idx, const glm::vec3 & start, const glm::vec3 & end, const float t1, const float t2, BSP_Intersection & bis ) {
+void BSP::trace_seg_tree( const i32 node_idx, const glm::vec3 & start, const glm::vec3 & end, const float t1, const float t2, BSP_Intersection & bis ) const {
 	if( node_idx < 0 ) {
 		trace_seg_leaf( -( node_idx + 1 ), bis );
 		return;
@@ -192,7 +212,7 @@ void BSP::trace_seg_tree( const i32 node_idx, const glm::vec3 & start, const glm
 	trace_seg_tree( pos_to_neg ? node.neg_child : node.pos_child, mid2, end, m2, t2, bis );
 }
 
-bool BSP::trace_seg( const glm::vec3 & start, const glm::vec3 & end, Intersection & is ) {
+bool BSP::trace_seg( const glm::vec3 & start, const glm::vec3 & end, Intersection & is ) const {
 	BSP_Intersection bis = { };
 	bis.is.t = 1;
 	bis.start = start;
@@ -208,7 +228,7 @@ bool BSP::trace_seg( const glm::vec3 & start, const glm::vec3 & end, Intersectio
 	return bis.hit;
 }
 
-BSP_Leaf & BSP::position_to_leaf( const glm::vec3 & pos ) {
+BSP_Leaf & BSP::position_to_leaf( const glm::vec3 & pos ) const {
 	i32 node_idx = 0;
 
 	do {
@@ -239,28 +259,45 @@ int main() {
 	BSP bsp( "acidwdm2.bsp" );
 	GLFWwindow * const window = GL::init();
 
-	const glm::vec3 start( 0, -100, 450 );
-	const glm::vec3 angles( -90, 135, 0 );
-	const glm::vec3 end = start + angles_to_vector( d2r( angles ) ) * 1000.0f;
+	glm::vec3 pos( 0, -100, 450 );
+	glm::vec3 angles = d2r( glm::vec3( -90, 135, 0 ) );
+	const glm::vec3 end = pos + angles_to_vector( angles ) * 1000.0f;
 
 	Intersection tt;
-	bool hit = bsp.trace_seg( start, end, tt );
+	bool hit = bsp.trace_seg( pos, end, tt );
 
 	printf( "%.3f: %s %.1f %.1f %.1f\n", tt.t, hit ? "yes" : "no", tt.pos.x, tt.pos.y, tt.pos.z );
 
+	float lastFrame = glfwGetTime();
+
+	gluPerspective( 120.0f, 800.0f / 600.0f, 0.1f, 10000.0f );
+
 	while( !glfwWindowShouldClose( window ) ) {
-		float now = glfwGetTime();
+		const float now = glfwGetTime();
+		const float dt = now - lastFrame;
 
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-		glLoadIdentity();
+
+		const int fb = glfwGetKey( window, 'W' ) - glfwGetKey( window, 'S' );
+		const int lr = glfwGetKey( window, 'A' ) - glfwGetKey( window, 'D' );
+
+		if( fb ) {
+			pos += angles_to_vector( angles ) * 320.0f * dt * ( float ) fb;
+		}
+
+		if( lr ) {
+			const glm::vec3 sideways = glm::vec3( -cosf( angles.y ), sinf( angles.y ), 0 );
+			pos += sideways * 320.0f * dt * ( float ) lr;
+		}
 
 		// TODO: do matrices like a big boy
-		gluPerspective( 120.0f, 800.0f / 600.0f, 0.1f, 10000.0f );
-		glRotatef( angles.x, 1.0, 0.0, 0.0 );
-		glRotatef( angles.y, 0.0, 0.0, 1.0 );
-		glTranslatef( -start.x, -start.y, -start.z );
+		glPushMatrix();
 
-		BSP_Renderer::render( bsp, start );
+		glRotatef( angles.x * 180 / M_PI, 1.0, 0.0, 0.0 );
+		glRotatef( angles.y * 180 / M_PI, 0.0, 0.0, 1.0 );
+		glTranslatef( -pos.x, -pos.y, -pos.z );
+
+		BSP_Renderer::render( bsp, pos );
 
 		glLoadIdentity();
 
@@ -272,16 +309,15 @@ int main() {
 		glVertex2f( 1, 0.95 );
 		glEnd();
 
-		static char buffer[99999]; // ~500 chars
-		int num_quads = stb_easy_font_print(2, 2, "hello", NULL, buffer, sizeof(buffer));
-
 		glOrtho( 0, 640, 480, 0, -1, 1 );
-		glColor3f(1,1,1);
-		glVertexPointer(2, GL_FLOAT, 16, buffer);
-		glDrawArrays(GL_QUADS, 0, num_quads*4);
+		TEXT( 2, 2, "%d", ( int ) ( 1 / dt ) );
+
+		glPopMatrix();
 
 		glfwSwapBuffers( window );
 		glfwPollEvents();
+
+		lastFrame = now;
 	}
 
 	GL::term();
