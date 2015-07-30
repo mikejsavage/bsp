@@ -6,9 +6,13 @@ BSPOBJS := $(patsubst %.cc,%.o,$(BSPSRCS))
 HMSRCS = hm.cc gl.cc stb_image.cc stb_perlin.cc
 HMOBJS := $(patsubst %.cc,%.o,$(HMSRCS))
 
-CXXFLAGS += -std=c++11 -O2 -Wall -Wextra -ggdb3
-LDFLAGS += -lm -lGL -lglfw
+WARNINGS = -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-write-strings
+CXXFLAGS += -std=c++11 -O2 $(WARNINGS) -ggdb3 -DGL_GLEXT_PROTOTYPES
+LDFLAGS += -lm -lGL -lGLEW -lglfw
 LDFLAGS += -lGLU
+
+picky: WARNINGS += -Wunused-parameter -Wunused-function -Wwrite-strings
+picky: all
 
 hm: $(HMOBJS)
 	$(CXX) $(HMOBJS) $(LDFLAGS) -o hm

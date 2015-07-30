@@ -3,9 +3,10 @@
 #include <math.h>
 #include <err.h>
 
-#include <GL/glu.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "int.h"
 #include "gl.h"
@@ -15,6 +16,9 @@
 
 const float EPSILON = 1.0 / 32.0;
 const float SLOPE = 0.3;
+
+glm::vec3 pos( 0, 0, 50 );
+glm::vec3 angles = glm::radians( glm::vec3( -90, 45, 0 ) );
 
 #define TEXT( x, y, form, ... ) \
 	do { \
@@ -27,23 +31,6 @@ const float SLOPE = 0.3;
 		glDrawArrays(GL_QUADS, 0, num_quads*4); \
 	} while( 0 )
 
-void glterrible() {
-	printf( "glterrible\n" );
-	GLenum err = glGetError();
-	const char * error;
-
-	switch(err) {
-		case GL_INVALID_OPERATION:      error="INVALID_OPERATION";      break;
-		case GL_INVALID_ENUM:           error="INVALID_ENUM";           break;
-		case GL_INVALID_VALUE:          error="INVALID_VALUE";          break;
-		case GL_OUT_OF_MEMORY:          error="OUT_OF_MEMORY";          break;
-		case GL_INVALID_FRAMEBUFFER_OPERATION:  error="INVALID_FRAMEBUFFER_OPERATION";  break;
-		default: error = "shit bro"; break;
-	}
-
-	printf( "GL error: %s\n", error );
-}
-
 // TODO: bit twiddling?
 bool same_sign( const float a, const float b ) {
 	return a * b >= 0;
@@ -51,10 +38,6 @@ bool same_sign( const float a, const float b ) {
 
 float point_plane_distance( const glm::vec3 & point, const glm::vec3 & normal, float d ) {
 	return glm::dot( point, normal ) - d;
-}
-
-glm::vec3 d2r( const glm::vec3 & degrees ) {
-	return degrees * static_cast< float >( M_PI / 180 );
 }
 
 glm::vec3 angles_to_vector( const glm::vec3 & angles ) {
@@ -98,14 +81,114 @@ float bilinear_interpolation(
 	return lerp( mx1, mx2, ty );
 }
 
+#define GLSL( shader ) "#version 150\n" #shader
+
+const GLchar * const vert_src = GLSL(
+	in vec3 position;
+	in vec3 normal;
+
+	out vec3 c;
+
+	uniform mat4 vp;
+
+	void main() {
+		c = normal;
+		gl_Position = vp * vec4( position, 1.0 );
+	}
+);
+
+const GLchar * frag_src = GLSL(
+	in vec3 c;
+	out vec4 colour;
+
+	void main() {
+		colour = vec4( c, 1.0 );
+	}
+);
+
+// this is taken from somewhere online
+static void show_info_log(
+	GLuint object,
+	PFNGLGETSHADERIVPROC glGet__iv,
+	PFNGLGETSHADERINFOLOGPROC glGet__InfoLog
+)
+{
+	GLint log_length;
+	char *log;
+
+	glGet__iv(object, GL_INFO_LOG_LENGTH, &log_length);
+	log = ( char * ) malloc(log_length);
+	glGet__InfoLog(object, log_length, nullptr, log);
+	fprintf(stderr, "%s", log);
+	free(log);
+}
+
+// this is taken from somewhere online
+void check_compile_status( const GLuint shader ) {
+	GLint ok;
+	glGetShaderiv( shader, GL_COMPILE_STATUS, &ok );
+
+	if( !ok ) {
+		fprintf( stderr, "shit bruh:\n" );
+		show_info_log( shader, glGetShaderiv, glGetShaderInfoLog );
+		glDeleteShader( shader );
+	}
+}
+
+// this is taken from somewhere online
+void check_link_status( const GLuint prog ) {
+	GLint ok;
+	glGetProgramiv(prog, GL_LINK_STATUS, &ok);
+	if (!ok) {
+		fprintf(stderr, "Failed to link shader program:\n");
+		show_info_log(prog, glGetProgramiv, glGetProgramInfoLog);
+		glDeleteProgram(prog);
+	}
+}
+
+GLuint compile_shader( const char * const vert, const char * const frag, const char * const out ) {
+	const GLuint vs = glCreateShader( GL_VERTEX_SHADER );
+	const GLuint fs = glCreateShader( GL_FRAGMENT_SHADER );
+
+	glShaderSource( vs, 1, &vert, NULL );
+	glShaderSource( fs, 1, &frag, NULL );
+
+	glCompileShader( vs );
+	check_compile_status( vs );
+	glCompileShader( fs );
+	check_compile_status( fs );
+
+	const GLuint prog = glCreateProgram();
+
+	glAttachShader( prog, vs );
+	glAttachShader( prog, fs );
+	glBindFragDataLocation( prog, 0, out );
+	glLinkProgram( prog );
+
+	check_link_status( prog );
+
+	return prog;
+}
+
 class Heightmap {
-public:
+private:
 	u8 * pixels;
 	int w, h;
 
 	float * lit;
 
-	Heightmap( const std::string image ) {
+	GLuint vbo = 0;
+	GLuint vbo_normals = 0;
+	GLuint vao;
+	GLuint ebo;
+
+	GLuint shader;
+	GLint at_pos;
+	GLint at_normal;
+	GLint un_vp;
+
+public:
+	void init( const std::string image ) {
 		pixels = stbi_load( image.c_str(), &w, &h, nullptr, 1 );
 
 		printf( "begin lit calculations\n" );
@@ -138,12 +221,78 @@ public:
 			}
 		}
 		printf( "end lit calculations\n" );
+
+		printf( "sending data to gpu\n" );
+
+		shader = compile_shader( vert_src, frag_src, "colour" );
+		at_pos = glGetAttribLocation( shader, "position" );
+		at_normal = glGetAttribLocation( shader, "normal" );
+		un_vp = glGetUniformLocation( shader, "vp" );
+
+		GLfloat * vertices = new GLfloat[ w * h * 3 ];
+		GLfloat * normals = new GLfloat[ w * h * 3 ];
+		GLuint * indices = new GLuint[ w * h * 6 ];
+
+		for( int y = 0; y < h; y++ ) {
+			for( int x = 0; x < w; x++ ) {
+				const int base = 3 * ( y * w + x );
+				const float height = point( x, y ).z;
+
+				vertices[ base ] = x;
+				vertices[ base + 1 ] = y;
+				vertices[ base + 2 ] = height;
+
+				const glm::vec3 normal = glm::vec3( 1, 1, 0 );
+
+				normals[ base ] = normal.x;
+				normals[ base + 1 ] = normal.y;
+				normals[ base + 2 ] = normal.z;
+			}
+		}
+
+		for( int y = 0; y < h - 1; y++ ) {
+			for( int x = 0; x < w - 1; x++ ) {
+				const int base = 6 * ( y * w + x );
+
+				indices[ base + 0 ] = ( y + 0 ) * w + ( x + 0 );
+				indices[ base + 1 ] = ( y + 1 ) * w + ( x + 0 );
+				indices[ base + 2 ] = ( y + 0 ) * w + ( x + 1 );
+				indices[ base + 3 ] = ( y + 1 ) * w + ( x + 1 );
+				indices[ base + 4 ] = ( y + 0 ) * w + ( x + 1 );
+				indices[ base + 5 ] = ( y + 1 ) * w + ( x + 0 );
+			}
+		}
+
+		glGenVertexArrays( 1, &vao );
+		glBindVertexArray( vao );
+
+		glGenBuffers( 1, &vbo );
+		glBindBuffer( GL_ARRAY_BUFFER, vbo );
+		glBufferData( GL_ARRAY_BUFFER, w * h * sizeof( GLfloat ) * 3, vertices, GL_STATIC_DRAW );
+
+		glGenBuffers( 1, &vbo_normals );
+		glBindBuffer( GL_ARRAY_BUFFER, vbo_normals );
+		glBufferData( GL_ARRAY_BUFFER, w * h * sizeof( GLfloat ) * 3, normals, GL_STATIC_DRAW );
+
+		glGenBuffers( 1, &ebo );
+		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, ebo );
+		glBufferData( GL_ELEMENT_ARRAY_BUFFER, ( w - 1 ) * ( h - 1 ) * sizeof( GLuint ) * 6, indices, GL_STATIC_DRAW );
+
+		delete vertices;
+		delete indices;
+
+		printf( "sent\n" );
 	}
 
 	~Heightmap() {
-		stbi_image_free( pixels );
+		if( vbo != 0 ) {
+			glDeleteBuffers( 1, &ebo );
+			glDeleteBuffers( 1, &vbo );
+			glDeleteVertexArrays( 1, &vao );
 
-		delete lit;
+			delete lit;
+			stbi_image_free( pixels );
+		}
 	}
 
 	glm::vec3 point( int x, int y ) const {
@@ -164,64 +313,90 @@ public:
 	}
 
 	void render() const {
-		const glm::vec3 sun = glm::normalize( glm::vec3( 1, 0, -SLOPE ) );
-		const glm::vec3 up = glm::vec3( 0, 0, 1 );
+		// const glm::vec3 sun = glm::normalize( glm::vec3( 1, 0, -SLOPE ) );
+		// const glm::vec3 up = glm::vec3( 0, 0, 1 );
+                //
+		// glBegin( GL_TRIANGLES );
+		// for( int y = 0; y < h - 1; y++ ) {
+		// 	for( int x = 0; x < w - 1; x++ ) {
+		// 		const float noise = fabsf( stb_perlin_noise3( ( float ) x / w, ( float ) y / h, 0 ) ) / 10;
+                //
+		// 		const int tri1[ 3 ][ 2 ] = { { x, y }, { x, y + 1 }, { x + 1, y } };
+		// 		const int tri2[ 3 ][ 2 ] = { { x + 1, y + 1 }, { x + 1, y }, { x, y + 1 } };
+                //
+		// 		glm::vec3 points1[ 3 ];
+		// 		glm::vec3 points2[ 3 ];
+		// 		for( int i = 0; i < 3; i++ ) {
+		// 			points1[ i ] = point( tri1[ i ][ 0 ], tri1[ i ][ 1 ] );
+		// 			points2[ i ] = point( tri2[ i ][ 0 ], tri2[ i ][ 1 ] );
+		// 		}
+                //
+		// 		const glm::vec3 normal1 = triangle_normal( points1[ 0 ], points1[ 1 ], points1[ 2 ] );
+		// 		const glm::vec3 normal2 = triangle_normal( points2[ 0 ], points2[ 1 ], points2[ 2 ] );
+                //
+		// 		const glm::vec3 tex1 = fabsf( glm::dot( normal1, up ) ) + noise > 0.9 ? glm::vec3( 0.2, 0.6, 0.2 ) : glm::vec3( 0.5, 0.5, 0.3 );
+		// 		const glm::vec3 tex2 = fabsf( glm::dot( normal2, up ) ) + noise > 0.9 ? glm::vec3( 0.2, 0.6, 0.2 ) : glm::vec3( 0.5, 0.5, 0.3 );
+                //
+		// 		for( int i = 0; i < 3; i++ ) {
+		// 			const bool islit = lit[ tri1[ i ][ 1 ] * w + tri1[ i ][ 0 ] ] == -1;
+		// 			const float light = 0.2 + ( islit ? glm::dot( normal1, sun ) : 0 );
+                //
+		// 			glColor3fv( &( tex1 * light )[ 0 ] );
+		// 			glVertex3fv( &points1[ i ][ 0 ] );
+		// 		}
+                //
+		// 		for( int i = 0; i < 3; i++ ) {
+		// 			const bool islit = lit[ tri2[ i ][ 1 ] * w + tri2[ i ][ 0 ] ] == -1;
+		// 			const float light = 0.2 + ( islit ? glm::dot( normal2, sun ) : 0 );
+                //
+		// 			glColor3fv( &( tex2 * light )[ 0 ] );
+		// 			glVertex3fv( &points2[ i ][ 0 ] );
+		// 		}
+		// 	}
+		// }
+		// glEnd();
 
-		glBegin( GL_TRIANGLES );
-		for( int y = 0; y < h - 1; y++ ) {
-			for( int x = 0; x < w - 1; x++ ) {
-				const float noise = fabsf( stb_perlin_noise3( ( float ) x / w, ( float ) y / h, 0 ) ) / 10;
+		glUseProgram( shader );
+		glBindVertexArray( vao );
 
-				const int tri1[ 3 ][ 2 ] = { { x, y }, { x, y + 1 }, { x + 1, y } };
-				const int tri2[ 3 ][ 2 ] = { { x + 1, y + 1 }, { x + 1, y }, { x, y + 1 } };
+		const glm::mat4 P = glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10000.0f );
+		const glm::mat4 VP = glm::translate(
+			glm::rotate(
+				glm::rotate(
+					P,
+					angles.x,
+					glm::vec3( 1, 0, 0 )
+				),
+				angles.y,
+				glm::vec3( 0, 0, 1 )
+			),
+			-pos
+		);
 
-				glm::vec3 points1[ 3 ];
-				glm::vec3 points2[ 3 ];
-				for( int i = 0; i < 3; i++ ) {
-					points1[ i ] = point( tri1[ i ][ 0 ], tri1[ i ][ 1 ] );
-					points2[ i ] = point( tri2[ i ][ 0 ], tri2[ i ][ 1 ] );
-				}
+		glUniformMatrix4fv( un_vp, 1, GL_FALSE, glm::value_ptr( VP ) );
 
-				const glm::vec3 normal1 = triangle_normal( points1[ 0 ], points1[ 1 ], points1[ 2 ] );
-				const glm::vec3 normal2 = triangle_normal( points2[ 0 ], points2[ 1 ], points2[ 2 ] );
+		glBindBuffer( GL_ARRAY_BUFFER, vbo );
+		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, ebo );
+		glEnableVertexAttribArray( at_pos );
+		glVertexAttribPointer( at_pos, 3, GL_FLOAT, GL_FALSE, 0, 0 );
 
-				const glm::vec3 tex1 = fabsf( glm::dot( normal1, up ) ) + noise > 0.9 ? glm::vec3( 0.2, 0.6, 0.2 ) : glm::vec3( 0.5, 0.5, 0.3 );
-				const glm::vec3 tex2 = fabsf( glm::dot( normal2, up ) ) + noise > 0.9 ? glm::vec3( 0.2, 0.6, 0.2 ) : glm::vec3( 0.5, 0.5, 0.3 );
+		glBindBuffer( GL_ARRAY_BUFFER, vbo_normals );
+		glEnableVertexAttribArray( at_normal );
+		glVertexAttribPointer( at_normal, 3, GL_FLOAT, GL_FALSE, 0, 0 );
 
-				for( int i = 0; i < 3; i++ ) {
-					const bool islit = lit[ tri1[ i ][ 1 ] * w + tri1[ i ][ 0 ] ] == -1;
-					const float light = 0.2 + ( islit ? glm::dot( normal1, sun ) : 0 );
-
-					glColor3fv( &( tex1 * light )[ 0 ] );
-					glVertex3fv( &points1[ i ][ 0 ] );
-				}
-
-				for( int i = 0; i < 3; i++ ) {
-					const bool islit = lit[ tri2[ i ][ 1 ] * w + tri2[ i ][ 0 ] ] == -1;
-					const float light = 0.2 + ( islit ? glm::dot( normal2, sun ) : 0 );
-
-					glColor3fv( &( tex2 * light )[ 0 ] );
-					glVertex3fv( &points2[ i ][ 0 ] );
-				}
-			}
-		}
-		glEnd();
+		glDrawElements( GL_TRIANGLES, ( w - 1 ) * ( h - 1 ) * 6, GL_UNSIGNED_INT, 0 );
 	}
 };
 
 int main( int argc, char ** argv ) {
-	Heightmap hm( argc == 2 ? argv[ 1 ] : "mountains512.png" );
 	GLFWwindow * const window = GL::init();
 
-	glm::vec3 pos( 0, 0, 32 );
-	glm::vec3 angles = d2r( glm::vec3( -90, 45, 0 ) );
+	Heightmap hm;
+	hm.init( argc == 2 ? argv[ 1 ] : "mountains512.png" );
 
 	float lastFrame = glfwGetTime();
 
-	gluPerspective( 120.0f, 800.0f / 600.0f, 0.1f, 10000.0f );
 	glClearColor( 0, 0.5, 0.7, 1 );
-
-	float z = 50;
 
 	while( !glfwWindowShouldClose( window ) ) {
 		const float now = glfwGetTime();
@@ -239,36 +414,28 @@ int main( int argc, char ** argv ) {
 		angles.x += pitch * dt * 2;
 		angles.y += yaw * dt * 2;
 
-		pos += angles_to_vector_xy( angles ) * 50.0f * dt * ( float ) fb;
+		pos += angles_to_vector_xy( angles ) * 100.0f * dt * ( float ) fb;
 		const glm::vec3 sideways = glm::vec3( -cosf( angles.y ), sinf( angles.y ), 0 );
-		pos += sideways * 50.0f * dt * ( float ) lr;
+		pos += sideways * 100.0f * dt * ( float ) lr;
 		// pos.z = hm.height( pos.x, pos.y ) + 8;
-		z += dz * 10.0f * dt;
-		pos.z = z;
-
-		// TODO: do matrices like a big boy
-		glPushMatrix();
-
-		glRotatef( angles.x * 180 / M_PI, 1.0, 0.0, 0.0 );
-		glRotatef( angles.y * 180 / M_PI, 0.0, 0.0, 1.0 );
-		glTranslatef( -pos.x, -pos.y, -pos.z );
+		pos.z += dz * 10.0f * dt;
 
 		hm.render();
 
-		glLoadIdentity();
-
-		glBegin( GL_TRIANGLE_STRIP );
-		glColor3f( 0.2, 0.2, 0.2 );
-		glVertex2f( -1, 1 );
-		glVertex2f( 1, 1 );
-		glVertex2f( -1, 0.95 );
-		glVertex2f( 1, 0.95 );
-		glEnd();
-
-		glOrtho( 0, 640, 480, 0, -1, 1 );
-		TEXT( 2, 2, "%d", ( int ) ( 1 / dt ) );
-
-		glPopMatrix();
+		// glLoadIdentity();
+                //
+		// glBegin( GL_TRIANGLE_STRIP );
+		// glColor3f( 0.2, 0.2, 0.2 );
+		// glVertex2f( -1, 1 );
+		// glVertex2f( 1, 1 );
+		// glVertex2f( -1, 0.95 );
+		// glVertex2f( 1, 0.95 );
+		// glEnd();
+                //
+		// glOrtho( 0, 640, 480, 0, -1, 1 );
+		// TEXT( 2, 2, "%d", ( int ) ( 1 / dt ) );
+                //
+		// glPopMatrix();
 
 		glfwSwapBuffers( window );
 		glfwPollEvents();
