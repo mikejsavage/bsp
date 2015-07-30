@@ -6,13 +6,6 @@
 static const int WIDTH = 640;
 static const int HEIGHT = 480;
 
-static const int BITS_RED = 8;
-static const int BITS_GREEN = 8;
-static const int BITS_BLUE = 8;
-static const int BITS_ALPHA = 8;
-static const int BITS_DEPTH = 24;
-static const int BITS_STENCIL = 8;
-
 void error_handler( const int code, const char * const message ) {
 	warnx( "GLFW error %d: %s", code, message );
 }
