@@ -56,8 +56,13 @@ void print_vec3( const std::string & name, const glm::vec3 & v ) {
 	printf( "%s: %.3f %.3f %.3f\n", name.c_str(), v.x, v.y, v.z );
 }
 
-glm::vec3 triangle_normal( const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c ) {
+// CCW winding points towards the camera
+glm::vec3 triangle_normal_ccw( const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c ) {
 	return glm::normalize( glm::cross( b - a, c - a ) );
+}
+
+glm::vec3 triangle_perp_ccw( const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c ) {
+	return glm::cross( b - a, c - a );
 }
 
 float lerp( const float a, const float b, const float t ) {
@@ -86,23 +91,41 @@ float bilinear_interpolation(
 const GLchar * const vert_src = GLSL(
 	in vec3 position;
 	in vec3 normal;
+	in float lit;
 
-	out vec3 c;
+	out vec3 n;
+	out float l;
 
 	uniform mat4 vp;
 
 	void main() {
-		c = normal;
+		n = normal;
+		l = lit;
 		gl_Position = vp * vec4( position, 1.0 );
 	}
 );
 
 const GLchar * frag_src = GLSL(
-	in vec3 c;
+	in vec3 n;
+	in float l;
+
 	out vec4 colour;
 
+	uniform vec3 sun;
+
 	void main() {
-		colour = vec4( c, 1.0 );
+		vec3 ground;
+		if( n.z > 0.9 ) {
+			ground = vec3( 0.4, 1.0, 0.4 );
+		}
+		else {
+			ground = vec3( 0.7, 0.7, 0.5 );
+		}
+
+		float d = max( 0, -dot( n, sun ) );
+		float light = max( 0.2, l * d );
+
+		colour = vec4( ground * light, 1.0 );
 	}
 );
 
@@ -178,21 +201,24 @@ private:
 	float * lit;
 
 	GLuint vbo = 0;
-	GLuint vbo_normals = 0;
+	GLuint vbo_normals;
+	GLuint vbo_lit;
 	GLuint vao;
 	GLuint ebo;
 
 	GLuint shader;
 	GLint at_pos;
 	GLint at_normal;
+	GLint at_lit;
 	GLint un_vp;
+	GLint un_sun;
 
 public:
 	void init( const std::string image ) {
 		pixels = stbi_load( image.c_str(), &w, &h, nullptr, 1 );
 
 		printf( "begin lit calculations\n" );
-		lit = new float[ w * h ];
+		lit = new GLfloat[ w * h ];
 		for( int i = 0; i < w * h; i++ ) {
 			lit[ i ] = 0;
 		}
@@ -220,6 +246,15 @@ public:
 				}
 			}
 		}
+
+		for( int y = 0; y < h; y++ ) {
+			for( int x = 0; x < w; x++ ) {
+				const int i = y * w + x;
+
+				lit[ i ] = lit[ i ] == -1 ? 1 : 0;
+			}
+		}
+
 		printf( "end lit calculations\n" );
 
 		printf( "sending data to gpu\n" );
@@ -227,7 +262,9 @@ public:
 		shader = compile_shader( vert_src, frag_src, "colour" );
 		at_pos = glGetAttribLocation( shader, "position" );
 		at_normal = glGetAttribLocation( shader, "normal" );
+		at_lit = glGetAttribLocation( shader, "lit" );
 		un_vp = glGetUniformLocation( shader, "vp" );
+		un_sun = glGetUniformLocation( shader, "sun" );
 
 		GLfloat * vertices = new GLfloat[ w * h * 3 ];
 		GLfloat * normals = new GLfloat[ w * h * 3 ];
@@ -242,7 +279,7 @@ public:
 				vertices[ base + 1 ] = y;
 				vertices[ base + 2 ] = height;
 
-				const glm::vec3 normal = glm::vec3( 1, 1, 0 );
+				const glm::vec3 normal = point_normal( x, y );
 
 				normals[ base ] = normal.x;
 				normals[ base + 1 ] = normal.y;
@@ -274,11 +311,16 @@ public:
 		glBindBuffer( GL_ARRAY_BUFFER, vbo_normals );
 		glBufferData( GL_ARRAY_BUFFER, w * h * sizeof( GLfloat ) * 3, normals, GL_STATIC_DRAW );
 
+		glGenBuffers( 1, &vbo_lit );
+		glBindBuffer( GL_ARRAY_BUFFER, vbo_lit );
+		glBufferData( GL_ARRAY_BUFFER, w * h * sizeof( GLfloat ), lit, GL_STATIC_DRAW );
+
 		glGenBuffers( 1, &ebo );
 		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, ebo );
 		glBufferData( GL_ELEMENT_ARRAY_BUFFER, ( w - 1 ) * ( h - 1 ) * sizeof( GLuint ) * 6, indices, GL_STATIC_DRAW );
 
 		delete vertices;
+		delete normals;
 		delete indices;
 
 		printf( "sent\n" );
@@ -288,6 +330,8 @@ public:
 		if( vbo != 0 ) {
 			glDeleteBuffers( 1, &ebo );
 			glDeleteBuffers( 1, &vbo );
+			glDeleteBuffers( 1, &vbo_normals );
+			glDeleteBuffers( 1, &vbo_lit );
 			glDeleteVertexArrays( 1, &vao );
 
 			delete lit;
@@ -296,7 +340,74 @@ public:
 	}
 
 	glm::vec3 point( int x, int y ) const {
-		return glm::vec3( x, y, pixels[ y * w + x ] / 8.0f );
+		return glm::vec3( x, y, pixels[ y * w + x ] / 4.0f );
+	}
+
+	glm::vec3 point_normal( int x, int y ) const {
+		glm::vec3 bent_normal = glm::vec3( 0 );
+
+		/*
+		 * A vertex looks like this:
+		 *
+		 *      +y
+		 *   \ 6 |
+		 *    \  |
+		 * 5   \ |  1
+		 *      \|
+		 * ------X------ +x
+		 *       |\
+		 *    2  | \   4
+		 *       |  \
+		 *       | 3 \
+		 *
+		 * We consider up to six triangles for the bent normal
+		 */
+
+		if( x > 0 ) {
+			if( y > 0 ) { // bottom left
+				const glm::vec3 tri2a = point( x, y );
+				const glm::vec3 tri2b = point( x - 1, y );
+				const glm::vec3 tri2c = point( x, y - 1 );
+
+				bent_normal += triangle_normal_ccw( tri2a, tri2b, tri2c );
+			}
+			if( y < h - 1 ) { // top left
+				const glm::vec3 tri5a = point( x, y );
+				const glm::vec3 tri5b = point( x - 1, y + 1 );
+				const glm::vec3 tri5c = point( x - 1, y );
+
+				const glm::vec3 tri6a = point( x, y );
+				const glm::vec3 tri6b = point( x, y + 1 );
+				const glm::vec3 tri6c = point( x - 1, y + 1 );
+
+				bent_normal += triangle_normal_ccw( tri5a, tri5b, tri5c );
+				bent_normal += triangle_normal_ccw( tri6a, tri6b, tri6c );
+			}
+		}
+
+		if( x < w - 1 ) {
+			if( y > 0 ) { // bottom right
+				const glm::vec3 tri3a = point( x, y );
+				const glm::vec3 tri3b = point( x, y - 1 );
+				const glm::vec3 tri3c = point( x + 1, y - 1 );
+
+				const glm::vec3 tri4a = point( x, y );
+				const glm::vec3 tri4b = point( x + 1, y - 1 );
+				const glm::vec3 tri4c = point( x + 1, y );
+
+				bent_normal += triangle_normal_ccw( tri3a, tri3b, tri3c );
+				bent_normal += triangle_normal_ccw( tri4a, tri4b, tri4c );
+			}
+			if( y < h - 1 ) { // top right
+				const glm::vec3 tri1a = point( x, y );
+				const glm::vec3 tri1b = point( x + 1, y );
+				const glm::vec3 tri1c = point( x, y + 1 );
+
+				bent_normal += triangle_normal_ccw( tri1a, tri1b, tri1c );
+			}
+		}
+
+		return glm::normalize( bent_normal );
 	}
 
 	float height( const float x, const float y ) const {
@@ -313,51 +424,10 @@ public:
 	}
 
 	void render() const {
-		// const glm::vec3 sun = glm::normalize( glm::vec3( 1, 0, -SLOPE ) );
-		// const glm::vec3 up = glm::vec3( 0, 0, 1 );
-                //
-		// glBegin( GL_TRIANGLES );
-		// for( int y = 0; y < h - 1; y++ ) {
-		// 	for( int x = 0; x < w - 1; x++ ) {
-		// 		const float noise = fabsf( stb_perlin_noise3( ( float ) x / w, ( float ) y / h, 0 ) ) / 10;
-                //
-		// 		const int tri1[ 3 ][ 2 ] = { { x, y }, { x, y + 1 }, { x + 1, y } };
-		// 		const int tri2[ 3 ][ 2 ] = { { x + 1, y + 1 }, { x + 1, y }, { x, y + 1 } };
-                //
-		// 		glm::vec3 points1[ 3 ];
-		// 		glm::vec3 points2[ 3 ];
-		// 		for( int i = 0; i < 3; i++ ) {
-		// 			points1[ i ] = point( tri1[ i ][ 0 ], tri1[ i ][ 1 ] );
-		// 			points2[ i ] = point( tri2[ i ][ 0 ], tri2[ i ][ 1 ] );
-		// 		}
-                //
-		// 		const glm::vec3 normal1 = triangle_normal( points1[ 0 ], points1[ 1 ], points1[ 2 ] );
-		// 		const glm::vec3 normal2 = triangle_normal( points2[ 0 ], points2[ 1 ], points2[ 2 ] );
-                //
-		// 		const glm::vec3 tex1 = fabsf( glm::dot( normal1, up ) ) + noise > 0.9 ? glm::vec3( 0.2, 0.6, 0.2 ) : glm::vec3( 0.5, 0.5, 0.3 );
-		// 		const glm::vec3 tex2 = fabsf( glm::dot( normal2, up ) ) + noise > 0.9 ? glm::vec3( 0.2, 0.6, 0.2 ) : glm::vec3( 0.5, 0.5, 0.3 );
-                //
-		// 		for( int i = 0; i < 3; i++ ) {
-		// 			const bool islit = lit[ tri1[ i ][ 1 ] * w + tri1[ i ][ 0 ] ] == -1;
-		// 			const float light = 0.2 + ( islit ? glm::dot( normal1, sun ) : 0 );
-                //
-		// 			glColor3fv( &( tex1 * light )[ 0 ] );
-		// 			glVertex3fv( &points1[ i ][ 0 ] );
-		// 		}
-                //
-		// 		for( int i = 0; i < 3; i++ ) {
-		// 			const bool islit = lit[ tri2[ i ][ 1 ] * w + tri2[ i ][ 0 ] ] == -1;
-		// 			const float light = 0.2 + ( islit ? glm::dot( normal2, sun ) : 0 );
-                //
-		// 			glColor3fv( &( tex2 * light )[ 0 ] );
-		// 			glVertex3fv( &points2[ i ][ 0 ] );
-		// 		}
-		// 	}
-		// }
-		// glEnd();
-
 		glUseProgram( shader );
 		glBindVertexArray( vao );
+
+		const glm::vec3 sun = glm::normalize( glm::vec3( 1, 0, -SLOPE ) );
 
 		const glm::mat4 P = glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10000.0f );
 		const glm::mat4 VP = glm::translate(
@@ -374,6 +444,7 @@ public:
 		);
 
 		glUniformMatrix4fv( un_vp, 1, GL_FALSE, glm::value_ptr( VP ) );
+		glUniform3fv( un_sun, 1, glm::value_ptr( sun ) );
 
 		glBindBuffer( GL_ARRAY_BUFFER, vbo );
 		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, ebo );
@@ -383,6 +454,10 @@ public:
 		glBindBuffer( GL_ARRAY_BUFFER, vbo_normals );
 		glEnableVertexAttribArray( at_normal );
 		glVertexAttribPointer( at_normal, 3, GL_FLOAT, GL_FALSE, 0, 0 );
+
+		glBindBuffer( GL_ARRAY_BUFFER, vbo_lit );
+		glEnableVertexAttribArray( at_lit );
+		glVertexAttribPointer( at_lit, 1, GL_FLOAT, GL_FALSE, 0, 0 );
 
 		glDrawElements( GL_TRIANGLES, ( w - 1 ) * ( h - 1 ) * 6, GL_UNSIGNED_INT, 0 );
 	}
@@ -418,7 +493,7 @@ int main( int argc, char ** argv ) {
 		const glm::vec3 sideways = glm::vec3( -cosf( angles.y ), sinf( angles.y ), 0 );
 		pos += sideways * 100.0f * dt * ( float ) lr;
 		// pos.z = hm.height( pos.x, pos.y ) + 8;
-		pos.z += dz * 10.0f * dt;
+		pos.z += dz * 50.0f * dt;
 
 		hm.render();
 
