@@ -469,13 +469,15 @@ int main( int argc, char ** argv ) {
 	Heightmap hm;
 	hm.init( argc == 2 ? argv[ 1 ] : "mountains512.png" );
 
-	float lastFrame = glfwGetTime();
+	const float start_time = glfwGetTime();
+	u32 frames = 0;
+	float last_frame = start_time;
 
 	glClearColor( 0, 0.5, 0.7, 1 );
 
 	while( !glfwWindowShouldClose( window ) ) {
 		const float now = glfwGetTime();
-		const float dt = now - lastFrame;
+		const float dt = now - last_frame;
 
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
@@ -515,8 +517,12 @@ int main( int argc, char ** argv ) {
 		glfwSwapBuffers( window );
 		glfwPollEvents();
 
-		lastFrame = now;
+		last_frame = now;
+		frames++;
 	}
+
+	const float end_time = glfwGetTime();
+	printf( "%u frames in %.1fs. %.1f FPS\n", frames, end_time - start_time, frames / ( end_time - start_time ) );
 
 	GL::term();
 
