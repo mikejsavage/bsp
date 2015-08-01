@@ -3,7 +3,7 @@ all: bsp hm pp
 BSPSRCS = bsp.cc bsp_renderer.cc gl.cc
 BSPOBJS := $(patsubst %.cc,%.o,$(BSPSRCS))
 
-HMSRCS = hm.cc gl.cc heightmap.cc stb_image.cc stb_perlin.cc
+HMSRCS = hm.cc gl.cc heightmap.cc terrain_manager.cc stb_image.cc stb_perlin.cc
 HMOBJS := $(patsubst %.cc,%.o,$(HMSRCS))
 
 PPSRCS = pp.cc stb_image.cc stb_image_write.cc

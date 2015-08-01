@@ -11,6 +11,7 @@
 #include "int.h"
 #include "gl.h"
 #include "heightmap.h"
+#include "terrain_manager.h"
 #include "stb_easy_font.h"
 #include "stb_image.h"
 #include "stb_perlin.h"
@@ -45,8 +46,9 @@ void print_vec3( const std::string & name, const glm::vec3 & v ) {
 int main( int argc, char ** argv ) {
 	GLFWwindow * const window = GL::init();
 
-	Heightmap hm;
-	hm.init( argc == 2 ? argv[ 1 ] : "mountains512.png" );
+	const std::string map = argc == 2 ? argv[ 1 ] : "mountains512.png" ;
+
+	TerrainManager tm( map + ".parts" );
 
 	const float start_time = glfwGetTime();
 	u32 frames = 0;
@@ -54,8 +56,10 @@ int main( int argc, char ** argv ) {
 
 	glClearColor( 0, 0.5, 0.7, 1 );
 
-	glm::vec3 pos( 0, 0, 50 );
+	glm::vec3 pos( 15000, 3000, 50 );
 	glm::vec3 angles = glm::radians( glm::vec3( -90, 45, 0 ) );
+
+	tm.teleport( pos );
 
 	const glm::mat4 P = glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10000.0f );
 
@@ -85,6 +89,8 @@ int main( int argc, char ** argv ) {
 		// pos.z = hm.height( pos.x, pos.y ) + 8;
 		pos.z += dz * 50.0f * dt;
 
+		tm.update( pos );
+
 		const glm::mat4 VP = glm::translate(
 			glm::rotate(
 				glm::rotate(
@@ -98,7 +104,7 @@ int main( int argc, char ** argv ) {
 			-pos
 		);
 
-		hm.render( VP );
+		tm.render( VP );
 
 		// glLoadIdentity();
                 //

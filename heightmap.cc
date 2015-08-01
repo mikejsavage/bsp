@@ -160,11 +160,29 @@ glm::vec3 triangle_perp_ccw( const glm::vec3 & a, const glm::vec3 & b, const glm
 	return glm::cross( b - a, c - a );
 }
 
-void Heightmap::init( const std::string image ) {
+Heightmap::~Heightmap() {
+	unload();
+	glDeleteProgram( shader );
+}
+
+void Heightmap::init() {
+	shader = compile_shader( vert_src, frag_src, "colour" );
+
+	at_pos = glGetAttribLocation( shader, "position" );
+	at_normal = glGetAttribLocation( shader, "normal" );
+	at_lit = glGetAttribLocation( shader, "lit" );
+
+	un_vp = glGetUniformLocation( shader, "vp" );
+	un_sun = glGetUniformLocation( shader, "sun" );
+}
+
+void Heightmap::load( const std::string & image, const int ox, const int oy ) {
+	printf( "%s offset by %dx%d\n", image.c_str(), ox, oy );
 	pixels = stbi_load( image.c_str(), &w, &h, nullptr, 1 );
 
-	printf( "begin lit calculations\n" );
-	lit = new GLfloat[ w * h ];
+	// printf( "begin lit calculations\n" );
+
+	float * const lit = new GLfloat[ w * h ];
 	for( int i = 0; i < w * h; i++ ) {
 		lit[ i ] = 0;
 	}
@@ -201,28 +219,22 @@ void Heightmap::init( const std::string image ) {
 		}
 	}
 
-	printf( "end lit calculations\n" );
+	// printf( "end lit calculations\n" );
+        //
+	// printf( "sending data to gpu\n" );
 
-	printf( "sending data to gpu\n" );
 
-	shader = compile_shader( vert_src, frag_src, "colour" );
-	at_pos = glGetAttribLocation( shader, "position" );
-	at_normal = glGetAttribLocation( shader, "normal" );
-	at_lit = glGetAttribLocation( shader, "lit" );
-	un_vp = glGetUniformLocation( shader, "vp" );
-	un_sun = glGetUniformLocation( shader, "sun" );
-
-	GLfloat * vertices = new GLfloat[ w * h * 3 ];
-	GLfloat * normals = new GLfloat[ w * h * 3 ];
-	GLuint * indices = new GLuint[ w * h * 6 ];
+	GLfloat * const vertices = new GLfloat[ w * h * 3 ];
+	GLfloat * const normals = new GLfloat[ w * h * 3 ];
+	GLuint * const indices = new GLuint[ w * h * 6 ];
 
 	for( int y = 0; y < h; y++ ) {
 		for( int x = 0; x < w; x++ ) {
 			const int base = 3 * ( y * w + x );
 			const float height = point( x, y ).z;
 
-			vertices[ base ] = x;
-			vertices[ base + 1 ] = y;
+			vertices[ base ] = x + ox;
+			vertices[ base + 1 ] = y + oy;
 			vertices[ base + 2 ] = height;
 
 			const glm::vec3 normal = point_normal( x, y );
@@ -249,8 +261,8 @@ void Heightmap::init( const std::string image ) {
 	glGenVertexArrays( 1, &vao );
 	glBindVertexArray( vao );
 
-	glGenBuffers( 1, &vbo );
-	glBindBuffer( GL_ARRAY_BUFFER, vbo );
+	glGenBuffers( 1, &vbo_verts );
+	glBindBuffer( GL_ARRAY_BUFFER, vbo_verts );
 	glBufferData( GL_ARRAY_BUFFER, w * h * sizeof( GLfloat ) * 3, vertices, GL_STATIC_DRAW );
 
 	glGenBuffers( 1, &vbo_normals );
@@ -263,25 +275,26 @@ void Heightmap::init( const std::string image ) {
 
 	glGenBuffers( 1, &ebo );
 	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, ebo );
-	glBufferData( GL_ELEMENT_ARRAY_BUFFER, ( w - 1 ) * ( h - 1 ) * sizeof( GLuint ) * 6, indices, GL_STATIC_DRAW );
+	glBufferData( GL_ELEMENT_ARRAY_BUFFER, w * h * sizeof( GLuint ) * 6, indices, GL_STATIC_DRAW );
 
 	delete vertices;
 	delete normals;
 	delete indices;
+	delete lit;
+	stbi_image_free( pixels );
 
-	printf( "sent\n" );
+	// printf( "sent\n" );
 }
 
-Heightmap::~Heightmap() {
-	if( vbo != 0 ) {
-		glDeleteBuffers( 1, &ebo );
-		glDeleteBuffers( 1, &vbo );
+void Heightmap::unload() {
+	if( vbo_verts != 0 ) {
+		glDeleteBuffers( 1, &vbo_verts );
 		glDeleteBuffers( 1, &vbo_normals );
 		glDeleteBuffers( 1, &vbo_lit );
+		glDeleteBuffers( 1, &ebo );
 		glDeleteVertexArrays( 1, &vao );
 
-		delete lit;
-		stbi_image_free( pixels );
+		vbo_verts = 0;
 	}
 }
 
@@ -370,6 +383,10 @@ float Heightmap::height( const float x, const float y ) const {
 }
 
 void Heightmap::render( const glm::mat4 & VP ) const {
+	if( vbo_verts == 0 ) {
+		return;
+	}
+
 	const glm::vec3 sun = glm::normalize( glm::vec3( 1, 0, -SLOPE ) );
 
 	glUseProgram( shader );
@@ -378,7 +395,7 @@ void Heightmap::render( const glm::mat4 & VP ) const {
 	glUniformMatrix4fv( un_vp, 1, GL_FALSE, glm::value_ptr( VP ) );
 	glUniform3fv( un_sun, 1, glm::value_ptr( sun ) );
 
-	glBindBuffer( GL_ARRAY_BUFFER, vbo );
+	glBindBuffer( GL_ARRAY_BUFFER, vbo_verts );
 	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, ebo );
 	glEnableVertexAttribArray( at_pos );
 	glVertexAttribPointer( at_pos, 3, GL_FLOAT, GL_FALSE, 0, 0 );
