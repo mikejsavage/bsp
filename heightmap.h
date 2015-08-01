@@ -1,6 +1,8 @@
 #ifndef _HEIGHTMAP_H_
 #define _HEIGHTMAP_H_
 
+#include <string>
+
 #include <GL/gl.h>
 #include <glm/glm.hpp>
 
