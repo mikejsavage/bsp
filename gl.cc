@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <err.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -52,7 +53,12 @@ void gl_error_printer(
 		type_string( type ),
 		severity_string( severity ),
 		message );
+
+	if( severity == GL_DEBUG_SEVERITY_HIGH ) {
+		exit( 1 );
+	}
 }
+
 void glfw_error_printer( const int code, const char * const message ) {
 	warnx( "GLFW error %d: %s", code, message );
 }
