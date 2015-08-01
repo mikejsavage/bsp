@@ -122,6 +122,9 @@ GLuint compile_shader( const char * const vert, const char * const frag, const c
 	glBindFragDataLocation( prog, 0, out );
 	glLinkProgram( prog );
 
+	glDeleteShader( vs );
+	glDeleteShader( fs );
+
 	check_link_status( prog );
 
 	return prog;
