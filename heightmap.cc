@@ -21,6 +21,7 @@ const GLchar * const vert_src = GLSL(
 	in float lit;
 
 	out vec3 n;
+	out float depth;
 	out float l;
 
 	uniform mat4 vp;
@@ -29,11 +30,13 @@ const GLchar * const vert_src = GLSL(
 		n = normal;
 		l = lit;
 		gl_Position = vp * vec4( position, 1.0 );
+		depth = gl_Position.z;
 	}
 );
 
 const GLchar * frag_src = GLSL(
 	in vec3 n;
+	in float depth;
 	in float l;
 
 	out vec4 colour;
@@ -52,7 +55,11 @@ const GLchar * frag_src = GLSL(
 		float d = max( 0, -dot( n, sun ) );
 		float light = max( 0.2, l * d );
 
-		colour = vec4( ground * light, 1.0 );
+		vec3 fog = vec3( 0.6, 0.6, 0.6 );
+
+		float t = smoothstep( 400, 600, depth );
+
+		colour = vec4( ( 1.0 - t ) * ground * light + t * fog, 1.0 );
 	}
 );
 
