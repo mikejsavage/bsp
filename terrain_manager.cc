@@ -16,6 +16,10 @@
 #include "heightmap.h"
 #include "terrain_manager.h"
 
+int iabs( const int x ) {
+	return x < 0 ? -x : x;
+}
+
 TerrainManager::TerrainManager( const std::string & dir ) : dir( dir ) {
 	FILE * dims = fopen( ( dir + "/dims.txt" ).c_str(), "r" );
 	fscanf( dims, "%d %d", &w, &h );
@@ -28,10 +32,10 @@ TerrainManager::TerrainManager( const std::string & dir ) : dir( dir ) {
 			const int ry = ty - REGION_HALF;
 
 			if( rx == ry || rx == -ry ) {
-				lods[ tx ][ ty ] = std::max( 1, std::abs( rx ) + std::abs( ry ) - 1 );
+				lods[ tx ][ ty ] = std::max( 1, iabs( rx ) + iabs( ry ) - 1 );
 			}
 			else {
-				lods[ tx ][ ty ] = std::max( std::abs( rx ), std::abs( ry ) );
+				lods[ tx ][ ty ] = std::max( iabs( rx ), iabs( ry ) );
 			}
 
 			tiles[ tx ][ ty ].init();

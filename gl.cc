@@ -74,6 +74,7 @@ GLFWwindow * GL::init() {
 
 	glfwWindowHint( GLFW_CLIENT_API, GLFW_OPENGL_API );
 	glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
+	glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 2 );
 
@@ -91,7 +92,10 @@ GLFWwindow * GL::init() {
 	}
 
 	glEnable( GL_DEBUG_OUTPUT );
+
+	#ifndef __APPLE__
 	glDebugMessageCallback( gl_error_printer, nullptr );
+	#endif
 
 	warnx( "Version %s", glGetString( GL_VERSION ) );
 	warnx( "Vendor %s", glGetString( GL_VENDOR ) );

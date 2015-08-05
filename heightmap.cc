@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include <GL/gl.h>
+#include "opengl.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
