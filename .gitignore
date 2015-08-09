@@ -1,6 +1,6 @@
-bsp
-hm
+medfall
 pp
 *.o
+*.so
 ttvfs
 *.bsp

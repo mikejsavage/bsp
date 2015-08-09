@@ -1,21 +1,15 @@
-all: hm pp
+all: medfall hm.so pp
 
-BSPSRCS = bsp.cc bsp_renderer.cc gl.cc
-BSPOBJS := $(patsubst %.cc,%.o,$(BSPSRCS))
-
-HMSRCS = hm.cc gl.cc heightmap.cc terrain_manager.cc stb_image.cc stb_perlin.cc
-HMOBJS := $(patsubst %.cc,%.o,$(HMSRCS))
-
-PPSRCS = pp.cc stb_image.cc stb_image_write.cc
-PPOBJS := $(patsubst %.cc,%.o,$(PPSRCS))
+OBJS = main.o gl.o
+BSPOBJS = bsp.o bsp_renderer.o gl.o
+HMOBJS = hm.o heightmap.o terrain_manager.o stb_image.o stb_perlin.o
+PPOBJS = pp.o stb_image.o stb_image_write.o
 
 WARNINGS = -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-write-strings
 CXXFLAGS += -std=c++11 -O2 $(WARNINGS) -ggdb3 -DGL_GLEXT_PROTOTYPES
 
 # OS detection
-uname := $(shell uname -s)
-
-ifneq ($(uname),Darwin)
+ifneq ($(shell uname -s),Darwin)
 	LDFLAGS += -lGL -lGLEW -lglfw
 	LDFLAGS += -lGLU
 else
@@ -31,17 +25,20 @@ endif
 picky: WARNINGS += -Wunused-parameter -Wunused-function -Wwrite-strings
 picky: all
 
-hm: $(HMOBJS)
+medfall: main.o gl.o
 	$(CXX) $^ $(LDFLAGS) -o $@
 
-bsp: $(BSPOBJS)
-	$(CXX) $^ $(LDFLAGS) -o $@
+hm.so: $(HMOBJS)
+	$(CXX) $^ $(LDFLAGS) -o $@ -shared
+
+bsp.so: $(BSPOBJS)
+	$(CXX) $^ $(LDFLAGS) -o $@ -shared
 
 pp: $(PPOBJS)
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 clean:
-	rm -f bsp hm $(BSPOBJS) $(HMOBJS) $(PPOBJS)
+	rm -f medfall bsp.so hm.so $(BSPOBJS) $(HMOBJS) $(PPOBJS)
 
 stb_image.o: stb_image.cc
 	$(CXX) $(CXXFLAGS) -c -o $@ $^ -DSTB_IMAGE_IMPLEMENTATION
