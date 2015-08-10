@@ -70,7 +70,6 @@ int main( int argc, char ** argv ) {
 
 	GLFWwindow * const window = GL::init();
 
-	bool running = true;
 	float last_frame_time = glfwGetTime();
 
 	game.init( state );
