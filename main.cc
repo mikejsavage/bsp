@@ -78,6 +78,10 @@ int main( int argc, char ** argv ) {
 		const float current_frame_time = glfwGetTime();
 		const float dt = current_frame_time - last_frame_time;
 
+		if( glfwGetKey( window, GLFW_KEY_Q ) ) {
+			break;
+		}
+
 		if( ( i32 ) current_frame_time != ( i32 ) last_frame_time ) {
 			if( should_reload_game( GAME_LIBRARY_PATH, game.lib_write_time ) ) {
 				unload_game( &game );
