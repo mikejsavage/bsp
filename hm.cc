@@ -12,7 +12,7 @@
 #include "int.h"
 #include "heightmap.h"
 #include "terrain_manager.h"
-#include "stb_easy_font.h"
+// #include "stb_easy_font.h"
 #include "stb_image.h"
 #include "stb_perlin.h"
 
