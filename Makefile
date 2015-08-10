@@ -25,7 +25,7 @@ endif
 picky: WARNINGS += -Wunused-parameter -Wunused-function -Wwrite-strings
 picky: all
 
-medfall: main.o gl.o
+medfall: $(OBJS)
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 hm.so: $(HMOBJS)
@@ -38,7 +38,7 @@ pp: $(PPOBJS)
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 clean:
-	rm -f medfall bsp.so hm.so $(BSPOBJS) $(HMOBJS) $(PPOBJS)
+	rm -f medfall bsp.so hm.so $(OBJS) $(BSPOBJS) $(HMOBJS) $(PPOBJS)
 
 stb_image.o: stb_image.cc
 	$(CXX) $(CXXFLAGS) -c -o $@ $^ -DSTB_IMAGE_IMPLEMENTATION
