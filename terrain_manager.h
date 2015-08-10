@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 
 #include "int.h"
+#include "heightmap.h"
 
 class TerrainManager {
 private:
@@ -12,7 +13,7 @@ private:
 	const static int REGION_SIZE = 11;
 	const static int REGION_HALF = REGION_SIZE / 2;
 
-	const std::string dir;
+	std::string dir;
 
 	int w, h;
 
@@ -26,6 +27,7 @@ private:
 
 public:
 	TerrainManager( const std::string & dir );
+	void use( const std::string & dir );
 
 	std::string tp( const int tx, const int ty ) const;
 	void update( const glm::vec3 & position );

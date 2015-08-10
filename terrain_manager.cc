@@ -20,7 +20,11 @@ int iabs( const int x ) {
 	return x < 0 ? -x : x;
 }
 
-TerrainManager::TerrainManager( const std::string & dir ) : dir( dir ) {
+TerrainManager::TerrainManager( const std::string & dir ) {
+	use( dir );
+}
+
+void TerrainManager::use( const std::string & dir ) {
 	FILE * dims = fopen( ( dir + "/dims.txt" ).c_str(), "r" );
 	fscanf( dims, "%d %d", &w, &h );
 	fclose( dims );

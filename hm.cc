@@ -43,63 +43,54 @@ void print_vec3( const std::string & name, const glm::vec3 & v ) {
 	printf( "%s: %.3f %.3f %.3f\n", name.c_str(), v.x, v.y, v.z );
 }
 
-bool init = false;
-glm::vec3 pos( 15000, 3000, 50 );
-glm::vec3 angles( glm::radians( glm::vec3( -90, 45, 0 ) ) );
 glm::mat4 P( glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10000.0f ) );
-TerrainManager tm( "Srtm_ramp2.world.21600x10800.jpg.parts" );
+
+extern "C" GAME_INIT( game_init ) {
+	state->pos = glm::vec3( 15000, 3000, 50 );
+	state->angles = glm::vec3( glm::radians( glm::vec3( -90, 45, 0 ) ) );
+	state->tm.use( "Srtm_ramp2.world.21600x10800.jpg.parts" );
+
+	glClearColor( 0, 0.5, 0.7, 1 );
+	state->tm.teleport( state->pos );
+}
 
 extern "C" GAME_FRAME( game_frame ) {
-	if( !init ) {
-		glClearColor( 0, 0.5, 0.7, 1 );
-		tm.teleport( pos );
-		init = true;
-	}
-
-	// if( glfwGetKey( window, 'Q' ) ) {
-	// 	break;
-	// }
+	GameState * state = ( GameState * ) mem.persistent;
 
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-	// const int fb = glfwGetKey( window, 'W' ) - glfwGetKey( window, 'S' );
-	// const int lr = glfwGetKey( window, 'A' ) - glfwGetKey( window, 'D' );
-	// const int dz = glfwGetKey( window, GLFW_KEY_SPACE ) - glfwGetKey( window, GLFW_KEY_LEFT_SHIFT );
+	const int fb = glfwGetKey( window, 'W' ) - glfwGetKey( window, 'S' );
+	const int lr = glfwGetKey( window, 'A' ) - glfwGetKey( window, 'D' );
+	const int dz = glfwGetKey( window, GLFW_KEY_SPACE ) - glfwGetKey( window, GLFW_KEY_LEFT_SHIFT );
 
-	// const int pitch = glfwGetKey( window, GLFW_KEY_UP ) - glfwGetKey( window, GLFW_KEY_DOWN );
-	// const int yaw = glfwGetKey( window, GLFW_KEY_RIGHT ) - glfwGetKey( window, GLFW_KEY_LEFT );
+	const int pitch = glfwGetKey( window, GLFW_KEY_UP ) - glfwGetKey( window, GLFW_KEY_DOWN );
+	const int yaw = glfwGetKey( window, GLFW_KEY_RIGHT ) - glfwGetKey( window, GLFW_KEY_LEFT );
 
-	const int fb = 0;
-	const int lr = 0;
-	const int dz = 0;
-	const int pitch = 0;
-	const int yaw = 0;
+	state->angles.x += pitch * dt * 2;
+	state->angles.y += yaw * dt * 2;
 
-	angles.x += pitch * dt * 2;
-	angles.y += yaw * dt * 2;
-
-	pos += angles_to_vector_xy( angles ) * 100.0f * dt * ( float ) fb;
-	const glm::vec3 sideways = glm::vec3( -cosf( angles.y ), sinf( angles.y ), 0 );
-	pos += sideways * 100.0f * dt * ( float ) lr;
+	state->pos += angles_to_vector_xy( state->angles ) * 100.0f * dt * ( float ) fb;
+	const glm::vec3 sideways = glm::vec3( -cosf( state->angles.y ), sinf( state->angles.y ), 0 );
+	state->pos += sideways * 100.0f * dt * ( float ) lr;
 	// pos.z = hm.height( pos.x, pos.y ) + 8;
-	pos.z += dz * 50.0f * dt;
+	state->pos.z += dz * 50.0f * dt;
 
-	tm.update( pos );
+	state->tm.update( state->pos );
 
 	const glm::mat4 VP = glm::translate(
 		glm::rotate(
 			glm::rotate(
 				P,
-				angles.x,
+				state->angles.x,
 				glm::vec3( 1, 0, 0 )
 			),
-			angles.y,
+			state->angles.y,
 			glm::vec3( 0, 0, 1 )
 		),
-		-pos
+		-state->pos
 	);
 
-	tm.render( VP );
+	state->tm.render( VP );
 
 	// glLoadIdentity();
 	//

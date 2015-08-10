@@ -14,6 +14,7 @@
 
 struct Game {
 	void * lib;
+	GameInit * init;
 	GameFrame * frame;
 
 	time_t lib_write_time;
@@ -33,10 +34,14 @@ Game load_game( const char * const path ) {
 
 	game.lib = dlopen( path, RTLD_NOW );
 	if( game.lib ) {
+		game.init = ( GameInit * ) dlsym( game.lib, "game_init" );
 		game.frame = ( GameFrame * ) dlsym( game.lib, "game_frame" );
-	}
 
-	printf( "loaded game: %p %p\n", game.lib, game.frame );
+		if( !game.init || !game.frame ) {
+			game.init = nullptr;
+			game.frame = nullptr;
+		}
+	}
 
 	game.lib_write_time = file_last_write_time( path );
 
@@ -56,13 +61,19 @@ bool should_reload_game( const char * const path, const time_t lib_write_time ) 
 }
 
 int main( int argc, char ** argv ) {
-	GLFWwindow * const window = GL::init();
-
 	Game game = load_game( GAME_LIBRARY_PATH );
 	GameMemory mem = { };
+	mem.persistent_size = 64LL * 1024 * 1024;
+	mem.persistent = new u8[ mem.persistent_size ];
+
+	GameState * state = ( GameState * ) reserve_persistent( mem, sizeof( GameState ) );
+
+	GLFWwindow * const window = GL::init();
 
 	bool running = true;
 	float last_frame_time = glfwGetTime();
+
+	game.init( state );
 
 	while( !glfwWindowShouldClose( window ) ) {
 		const float current_frame_time = glfwGetTime();
@@ -75,12 +86,10 @@ int main( int argc, char ** argv ) {
 			}
 		}
 
-		// TODO: keyboard events
-		
-		GameInput input = { };
-
+		// TODO: it would be nice to do input handling out here instead of
+		// just passing in window.
 		if( game.frame ) {
-			game.frame( mem, input, dt );
+			game.frame( mem, window, dt );
 		}
 
 		glfwSwapBuffers( window );
