@@ -49,9 +49,9 @@ extern "C" GAME_INIT( game_init ) {
 	state->pos = glm::vec3( 15000, 3000, 50 );
 	state->angles = glm::vec3( glm::radians( glm::vec3( -90, 45, 0 ) ) );
 	state->tm.use( "Srtm_ramp2.world.21600x10800.jpg.parts" );
+	state->tm.teleport( state->pos );
 
 	glClearColor( 0, 0.5, 0.7, 1 );
-	state->tm.teleport( state->pos );
 }
 
 extern "C" GAME_FRAME( game_frame ) {
