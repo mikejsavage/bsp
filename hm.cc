@@ -12,6 +12,7 @@
 #include "int.h"
 #include "heightmap.h"
 #include "terrain_manager.h"
+#include "work_queue.h"
 // #include "stb_easy_font.h"
 #include "stb_image.h"
 #include "stb_perlin.h"
@@ -45,11 +46,25 @@ void print_vec3( const std::string & name, const glm::vec3 & v ) {
 
 glm::mat4 P( glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10000.0f ) );
 
+WORK_QUEUE_CALLBACK( testwq ) {
+	u32 i = *( u32 * ) data;
+	printf( "the thread got called %u\n", i );
+}
 extern "C" GAME_INIT( game_init ) {
 	state->pos = glm::vec3( 15000, 3000, 50 );
 	state->angles = glm::vec3( glm::radians( glm::vec3( -90, 45, 0 ) ) );
 	state->tm.use( "Srtm_ramp2.world.21600x10800.jpg.parts" );
 	state->tm.teleport( state->pos );
+
+	workqueue_init( &state->background_tasks, 2 );
+	u32 nums[ 10 ];
+	for( u32 i = 0; i < 10; i++ ) {
+		nums[ i ] = i;
+		workqueue_enqueue( &state->background_tasks, testwq, &nums[ i ] );
+	}
+	printf( "let's exhaust\n" );
+	workqueue_exhaust( &state->background_tasks );
+	printf( "init done\n" );
 
 	glClearColor( 0, 0.5, 0.7, 1 );
 }

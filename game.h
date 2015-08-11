@@ -6,11 +6,14 @@
 
 #include "int.h"
 #include "terrain_manager.h"
+#include "work_queue.h"
 
 struct GameState {
 	glm::vec3 pos;
 	glm::vec3 angles;
 	TerrainManager tm;
+
+	WorkQueue background_tasks;
 };
 
 struct GameMemory {

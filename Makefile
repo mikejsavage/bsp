@@ -2,7 +2,7 @@ all: medfall hm.so pp
 
 OBJS = main.o gl.o work_queue.o
 BSPOBJS = bsp.o bsp_renderer.o gl.o
-HMOBJS = hm.o heightmap.o terrain_manager.o stb_image.o stb_perlin.o
+HMOBJS = hm.o heightmap.o terrain_manager.o work_queue.o stb_image.o stb_perlin.o
 PPOBJS = pp.o stb_image.o stb_image_write.o
 
 WARNINGS = -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-write-strings

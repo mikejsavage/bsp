@@ -11,30 +11,16 @@
 #define read_barrier() asm volatile ( "" ::: "memory" )
 #define write_barrier() asm volatile ( "" ::: "memory" )
 
-struct Job {
-	WorkQueueCallback * callback;
-	void * data;
-};
-
-struct WorkQueue {
-	Job jobs[ 256 ];
-
-	sem_t * sem;
-
-	// using head/length means we need to an atomic pair which is a pain
-	volatile u16 head;
-	volatile u16 tail;
-
-	volatile u16 jobs_queued;
-	volatile u16 jobs_completed;
-};
-
+#include <stdio.h>
 static bool workqueue_step( WorkQueue * const queue ) {
 	const u16 current_head = queue->head;
 	const u16 new_head = ( current_head + 1 ) % array_len( queue->jobs );
 
+	// read_barrier(); TODO:
+
 	if( queue->jobs_completed < queue->jobs_queued ) {
 		if( __sync_bool_compare_and_swap( &queue->head, current_head, new_head ) ) {
+			printf( "let's do a step\n" );
 			Job & job = queue->jobs[ current_head ];
 
 			job.callback( job.data );
@@ -48,6 +34,7 @@ static bool workqueue_step( WorkQueue * const queue ) {
 	return false;
 }
 
+#include <stdio.h>
 static void * workqueue_worker( void * data ) {
 	WorkQueue * queue = ( WorkQueue * ) data;
 
