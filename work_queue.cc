@@ -18,11 +18,9 @@ static bool workqueue_step( WorkQueue * const queue ) {
 
 	// read_barrier(); TODO:
 
-	if( queue->jobs_completed < queue->jobs_queued ) {
+	if( current_head != queue->tail ) {
 		if( __sync_bool_compare_and_swap( &queue->head, current_head, new_head ) ) {
-			printf( "let's do a step\n" );
-			Job & job = queue->jobs[ current_head ];
-
+			const Job & job = queue->jobs[ current_head ];
 			job.callback( job.data );
 
 			__sync_fetch_and_add( &queue->jobs_completed, 1 );

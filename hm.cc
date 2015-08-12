@@ -62,9 +62,7 @@ extern "C" GAME_INIT( game_init ) {
 		nums[ i ] = i;
 		workqueue_enqueue( &state->background_tasks, testwq, &nums[ i ] );
 	}
-	printf( "let's exhaust\n" );
 	workqueue_exhaust( &state->background_tasks );
-	printf( "init done\n" );
 
 	glClearColor( 0, 0.5, 0.7, 1 );
 }
