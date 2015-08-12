@@ -53,6 +53,7 @@ void unload_game( Game * game ) {
 		dlclose( game->lib );
 	}
 
+	game->init = nullptr;
 	game->frame = nullptr;
 }
 
