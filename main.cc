@@ -71,9 +71,9 @@ int main( int argc, char ** argv ) {
 
 	GLFWwindow * const window = GL::init();
 
-	float last_frame_time = glfwGetTime();
-
 	game.init( state );
+
+	float last_frame_time = glfwGetTime();
 
 	while( !glfwWindowShouldClose( window ) ) {
 		const float current_frame_time = glfwGetTime();
