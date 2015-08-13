@@ -6,7 +6,7 @@ HMOBJS = hm.o heightmap.o terrain_manager.o work_queue.o stb_image.o stb_perlin.
 PPOBJS = pp.o stb_image.o stb_image_write.o
 
 WARNINGS = -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-write-strings
-CXXFLAGS += -std=c++11 -O2 $(WARNINGS) -ggdb3 -DGL_GLEXT_PROTOTYPES
+CXXFLAGS += -std=c++11 -O2 $(WARNINGS) -ggdb3 -DGL_GLEXT_PROTOTYPES -pthread
 
 # OS detection
 ifneq ($(shell uname -s),Darwin)
