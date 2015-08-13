@@ -25,6 +25,8 @@ TerrainManager::TerrainManager( const std::string & dir ) {
 }
 
 void TerrainManager::use( const std::string & dir ) {
+	this->dir = dir;
+
 	FILE * dims = fopen( ( dir + "/dims.txt" ).c_str(), "r" );
 	fscanf( dims, "%d %d", &w, &h );
 	fclose( dims );
