@@ -1,5 +1,7 @@
+#include <err.h>
 #include <pthread.h>
-#include <semaphore.h>
+// #include <semaphore.h>
+#include <dispatch/dispatch.h>
 
 #include "int.h"
 #include "work_queue.h"
@@ -38,7 +40,8 @@ static void * workqueue_worker( void * data ) {
 
 	for( ;; ) {
 		if( !workqueue_step( queue ) ) {
-			sem_wait( queue->sem );
+			// sem_wait( queue->sem );
+			dispatch_semaphore_wait( queue->sem, DISPATCH_TIME_FOREVER );
 		}
 	}
 
@@ -48,7 +51,10 @@ static void * workqueue_worker( void * data ) {
 void workqueue_init( WorkQueue * const queue, const u32 num_threads ) {
 	*queue = { };
 
-	sem_init( queue->sem, 0, 0 );
+	// if( sem_init( queue->sem, 0, 0 ) == -1 ) {
+	// 	err( 1, "can't create semaphore" );
+	// }
+	queue->sem = dispatch_semaphore_create( 0 );
 
 	for( u32 i = 0; i < num_threads; i++ ) {
 		pthread_t thread;
@@ -67,7 +73,8 @@ void workqueue_enqueue( WorkQueue * const queue, WorkQueueCallback * const callb
 	write_barrier();
 	queue->tail = ( queue->tail + 1 ) % array_len( queue->jobs );
 
-	sem_post( queue->sem );
+	// sem_post( queue->sem );
+	dispatch_semaphore_signal( queue->sem );
 }
 
 void workqueue_exhaust( WorkQueue * const queue ) {

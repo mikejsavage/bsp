@@ -1,7 +1,8 @@
 #ifndef _WORK_QUEUE_H_
 #define _WORK_QUEUE_H_
 
-#include <semaphore.h>
+// #include <semaphore.h>
+#include <dispatch/dispatch.h>
 
 #include "int.h"
 
@@ -16,7 +17,8 @@ struct Job {
 struct WorkQueue {
 	Job jobs[ 256 ];
 
-	sem_t * sem;
+	// sem_t * sem;
+	dispatch_semaphore_t sem;
 
 	// using head/length means we need to an atomic pair which is a pain
 	volatile u16 head;
