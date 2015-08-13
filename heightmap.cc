@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <err.h>
 
 #include <string>
 
@@ -177,8 +178,11 @@ void Heightmap::init() {
 }
 
 void Heightmap::load( const std::string & image, const int ox, const int oy ) {
-	printf( "%s offset by %dx%d\n", image.c_str(), ox, oy );
 	pixels = stbi_load( image.c_str(), &w, &h, nullptr, 1 );
+
+	if( !pixels ) {
+		err( 1, "stbi_load failed (%s)", stbi_failure_reason() );
+	}
 
 	// printf( "begin lit calculations\n" );
 
@@ -222,7 +226,6 @@ void Heightmap::load( const std::string & image, const int ox, const int oy ) {
 	// printf( "end lit calculations\n" );
         //
 	// printf( "sending data to gpu\n" );
-
 
 	GLfloat * const vertices = new GLfloat[ w * h * 3 ];
 	GLfloat * const normals = new GLfloat[ w * h * 3 ];
