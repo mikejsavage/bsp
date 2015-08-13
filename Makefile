@@ -38,7 +38,7 @@ pp: $(PPOBJS)
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 clean:
-	rm -f medfall bsp.so hm.so $(OBJS) $(BSPOBJS) $(HMOBJS) $(PPOBJS)
+	rm -f medfall bsp.so hm.so pp $(OBJS) $(BSPOBJS) $(HMOBJS) $(PPOBJS)
 
 stb_image.o: stb_image.cc
 	$(CXX) $(CXXFLAGS) -c -o $@ $^ -DSTB_IMAGE_IMPLEMENTATION
