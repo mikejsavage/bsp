@@ -8,7 +8,7 @@
 
 // TODO: move me somewhere else
 #define assert( predicate ) { if( !( predicate ) ) { __builtin_trap(); } }
-#define array_len( x ) ( sizeof( x ) / sizeof( ( x )[ 0 ] ) )
+#define array_count( x ) ( sizeof( x ) / sizeof( ( x )[ 0 ] ) )
 
 #define read_barrier() asm volatile ( "" ::: "memory" )
 #define write_barrier() asm volatile ( "" ::: "memory" )
@@ -16,7 +16,7 @@
 #include <stdio.h>
 static bool workqueue_step( WorkQueue * const queue ) {
 	const u16 current_head = queue->head;
-	const u16 new_head = ( current_head + 1 ) % array_len( queue->jobs );
+	const u16 new_head = ( current_head + 1 ) % array_count( queue->jobs );
 
 	// read_barrier(); TODO:
 
@@ -43,6 +43,8 @@ static void * workqueue_worker( void * data ) {
 			// sem_wait( queue->sem );
 			dispatch_semaphore_wait( queue->sem, DISPATCH_TIME_FOREVER );
 		}
+
+		// pthread_testcancel();
 	}
 
 	return nullptr;
@@ -63,7 +65,7 @@ void workqueue_init( WorkQueue * const queue, const u32 num_threads ) {
 }
 
 void workqueue_enqueue( WorkQueue * const queue, WorkQueueCallback * const callback, void * const data ) {
-	assert( queue->jobs_queued < array_len( queue->jobs ) );
+	assert( queue->jobs_queued < array_count( queue->jobs ) );
 
 	const Job job = { callback, data };
 
@@ -71,7 +73,7 @@ void workqueue_enqueue( WorkQueue * const queue, WorkQueueCallback * const callb
 	queue->jobs_queued++;
 
 	write_barrier();
-	queue->tail = ( queue->tail + 1 ) % array_len( queue->jobs );
+	queue->tail = ( queue->tail + 1 ) % array_count( queue->jobs );
 
 	// sem_post( queue->sem );
 	dispatch_semaphore_signal( queue->sem );
