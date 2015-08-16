@@ -18,7 +18,7 @@ typedef uint64_t u64;
 typedef float f32;
 typedef double f64;
 
-#define array_len( x ) ( sizeof( x ) / sizeof( ( x )[ 0 ] ) )
+#define array_count( x ) ( sizeof( x ) / sizeof( ( x )[ 0 ] ) )
 
 #ifdef assert
 #undef assert
