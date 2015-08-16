@@ -35,6 +35,7 @@ MemoryArenaCheckpoint memarena_checkpoint( MemoryArena * const arena ) {
 void memarena_restore( MemoryArena * arena, MemoryArenaCheckpoint * const cp ) {
 	assert( arena->num_checkpoints > 0 );
 	assert( !cp->restored );
+	assert( arena->used >= cp->used );
 
 	arena->used = cp->used;
 	arena->num_checkpoints--;
