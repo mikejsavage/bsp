@@ -14,6 +14,7 @@ ifneq ($(shell uname -s),Darwin)
 	LDFLAGS += -lGLU
 else
 	# 8)
+	CXXFLAGS += -DGLFW_INCLUDE_GLCOREARB
 	CXXFLAGS += -I/usr/local/Cellar/glfw3/3.1.1/include
 	CXXFLAGS += -I/usr/local/Cellar/glm/0.9.6.3/include
 	LDFLAGS += -lm -framework Cocoa -framework OpenGL -framework IOKit -framework CoreFoundation -framework CoreVideo
