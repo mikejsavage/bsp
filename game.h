@@ -35,7 +35,7 @@ u8 * reserve_persistent( GameMemory & mem, const size_t size ) {
 struct GameInput {
 };
 
-#define GAME_INIT( name ) void name( GameState * state )
+#define GAME_INIT( name ) void name( GameState * state, GameMemory & mem )
 typedef GAME_INIT( GameInit );
 
 #define GAME_FRAME( name ) void name( GameMemory & mem, GLFWwindow * window, const float dt )
