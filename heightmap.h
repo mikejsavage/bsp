@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include <OpenGL/gl3.h>
+#include "opengl.h"
 #include <glm/glm.hpp>
 
 #include "intrinsics.h"
