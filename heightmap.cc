@@ -343,5 +343,5 @@ void Heightmap::render( const glm::mat4 & VP ) const {
 	glEnableVertexAttribArray( at_lit );
 	glVertexAttribPointer( at_lit, 1, GL_FLOAT, GL_FALSE, 0, 0 );
 
-	glDrawElements( GL_TRIANGLES, ( w - 1 ) * ( h - 1 ) * 6, GL_UNSIGNED_INT, 0 );
+	glDrawElements( GL_TRIANGLES, w * h * 6, GL_UNSIGNED_INT, 0 );
 }
