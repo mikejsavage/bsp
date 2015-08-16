@@ -22,7 +22,7 @@ struct GameMemory {
 	u8 * persistent;
 };
 
-u8 * reserve_persistent( GameMemory & mem, const size_t size ) {
+inline u8 * reserve_persistent( GameMemory & mem, const size_t size ) {
 	assert( mem.persistent_used + size <= mem.persistent_size );
 	assert( mem.persistent_used + size > mem.persistent_used );
 
