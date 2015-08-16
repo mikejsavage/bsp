@@ -1,7 +1,10 @@
 #include <stdlib.h>
 #include <err.h>
-#include <GL/glew.h>
 #include <GLFW/glfw3.h>
+
+#ifndef __APPLE__
+#include <GL/glew.h>
+#endif
 
 #include "gl.h"
 
@@ -13,6 +16,7 @@ static const int HEIGHT = 480;
 #define YELLOW "\e[1;32m"
 #define GREEN "\e[1;33m"
 
+#ifndef __APPLE__
 char * type_string( const GLenum type ) {
 	switch (type) {
 		case GL_DEBUG_TYPE_ERROR:
@@ -58,6 +62,7 @@ void gl_error_printer(
 		exit( 1 );
 	}
 }
+#endif
 
 void glfw_error_printer( const int code, const char * const message ) {
 	warnx( "GLFW error %d: %s", code, message );
@@ -65,7 +70,7 @@ void glfw_error_printer( const int code, const char * const message ) {
 
 GLFWwindow * GL::init() {
 	glfwSetErrorCallback( glfw_error_printer );
-	
+
 	if( !glfwInit() ) {
 		errx( 1, "glfwInit" );
 	}
@@ -85,16 +90,15 @@ GLFWwindow * GL::init() {
 
 	glfwMakeContextCurrent( window );
 
-	glewExperimental = true;
-	GLenum glew_error = glewInit();
-	if( glew_error != GLEW_OK ) {
-		errx( 1, "glewInit: %s", glewGetErrorString( glew_error ) );
-	}
-
-	glEnable( GL_DEBUG_OUTPUT );
-
 	#ifndef __APPLE__
-	glDebugMessageCallback( gl_error_printer, nullptr );
+		glewExperimental = true;
+		GLenum glew_error = glewInit();
+		if( glew_error != GLEW_OK ) {
+			errx( 1, "glewInit: %s", glewGetErrorString( glew_error ) );
+		}
+
+		glEnable( GL_DEBUG_OUTPUT );
+		glDebugMessageCallback( gl_error_printer, nullptr );
 	#endif
 
 	warnx( "Version %s", glGetString( GL_VERSION ) );
