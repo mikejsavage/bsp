@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include "platform_backtrace.h"
 
 typedef int8_t i8;
 typedef int16_t i16;
@@ -19,22 +18,6 @@ typedef float f32;
 typedef double f64;
 
 #define array_count( x ) ( sizeof( x ) / sizeof( ( x )[ 0 ] ) )
-
-#ifdef assert
-#undef assert
-#endif
-
-inline void mike_assert( const bool predicate, const char * const message ) {
-	if( !( predicate ) ) {
-		puts( message );
-		print_backtrace();
-		__builtin_trap();
-	}
-}
-
-#define STRINGIFY_HELPER( x ) #x
-#define STRINGIFY( x ) STRINGIFY_HELPER( x )
-#define assert( predicate ) mike_assert( predicate, "assertion failed at " __FILE__ " line " STRINGIFY( __LINE__ ) ": " #predicate )
 
 #define is_power_of_2( n ) ( ( ( n ) & ( ( n ) - 1 ) ) == 0 )
 
@@ -57,5 +40,23 @@ inline size_t megabytes( const size_t mb ) {
 inline size_t gigabytes( const size_t gb ) {
 	return megabytes( gb ) * 1024;
 }
+
+#include "platform_backtrace.h"
+
+#ifdef assert
+#undef assert
+#endif
+
+inline void mike_assert( const bool predicate, const char * const message ) {
+	if( !( predicate ) ) {
+		puts( message );
+		print_backtrace();
+		__builtin_trap();
+	}
+}
+
+#define STRINGIFY_HELPER( x ) #x
+#define STRINGIFY( x ) STRINGIFY_HELPER( x )
+#define assert( predicate ) mike_assert( predicate, "assertion failed at " __FILE__ " line " STRINGIFY( __LINE__ ) ": " #predicate )
 
 #endif // _INTRINSICS_H_
