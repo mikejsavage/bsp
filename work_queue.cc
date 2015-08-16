@@ -24,7 +24,6 @@ static bool workqueue_step( WorkQueue * const queue ) {
 	return false;
 }
 
-#include <stdio.h>
 static void * workqueue_worker( void * data ) {
 	WorkQueue * queue = ( WorkQueue * ) data;
 
