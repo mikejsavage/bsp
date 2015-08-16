@@ -16,10 +16,8 @@ else
 	# 8)
 	CXXFLAGS += -I/usr/local/Cellar/glfw3/3.1.1/include
 	CXXFLAGS += -I/usr/local/Cellar/glm/0.9.6.3/include
-	CXXFLAGS += -I/usr/local/Cellar/glew/1.12.0/include
 	LDFLAGS += -lm -framework Cocoa -framework OpenGL -framework IOKit -framework CoreFoundation -framework CoreVideo
 	LDFLAGS += -L/usr/local/Cellar/glfw3/3.1.1/lib -lglfw3
-	LDFLAGS += -L/usr/local/Cellar/glew/1.12.0/lib -lGLEW
 endif
 
 picky: WARNINGS += -Wunused-parameter -Wunused-function -Wwrite-strings
