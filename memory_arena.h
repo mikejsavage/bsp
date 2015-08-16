@@ -17,9 +17,13 @@ struct MemoryArenaCheckpoint {
 };
 
 void memarena_init( MemoryArena * const arena, u8 * const memory, const size_t size );
+
 u8 * memarena_push_size( MemoryArena * const arena, const size_t size, const size_t alignment = sizeof( void * ) );
-#define memarena_push_type( arena, type ) ( ( type * ) memarena_push_size( arena, sizeof( type ), sizeof( type ) ) )
+#define memarena_push_type( arena, type, ... ) ( ( type * ) memarena_push_size( arena, sizeof( type ), ##__VA_ARGS__ ) )
+#define memarena_push_many( arena, type, count, ... ) ( ( type * ) memarena_push_size( arena, sizeof( type ) * count, ##__VA_ARGS__ ) )
+
 void memarena_clear( MemoryArena * const arena );
+
 MemoryArenaCheckpoint memarena_checkpoint( MemoryArena * const arena );
 void memarena_restore( MemoryArena * arena, MemoryArenaCheckpoint * const cp );
 
