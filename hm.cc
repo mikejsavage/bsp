@@ -46,10 +46,11 @@ void print_vec3( const std::string & name, const glm::vec3 & v ) {
 
 glm::mat4 P( glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10000.0f ) );
 
-WORK_QUEUE_CALLBACK( testwq ) {
+static WORK_QUEUE_CALLBACK( testwq ) {
 	u32 i = *( u32 * ) data;
 	printf( "the thread got called %u\n", i );
 }
+
 extern "C" GAME_INIT( game_init ) {
 	state->pos = glm::vec3( 15000, 3000, 50 );
 	state->angles = glm::vec3( glm::radians( glm::vec3( -90, 45, 0 ) ) );
