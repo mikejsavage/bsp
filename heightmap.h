@@ -6,7 +6,7 @@
 #include <OpenGL/gl3.h>
 #include <glm/glm.hpp>
 
-#include "int.h"
+#include "intrinsics.h"
 
 class Heightmap {
 private:

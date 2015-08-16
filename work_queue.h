@@ -3,8 +3,7 @@
 
 // #include <semaphore.h>
 #include <dispatch/dispatch.h>
-
-#include "int.h"
+#include "intrinsics.h"
 
 #define WORK_QUEUE_CALLBACK( name ) void name( void * const data )
 typedef WORK_QUEUE_CALLBACK( WorkQueueCallback );

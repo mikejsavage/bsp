@@ -3,12 +3,8 @@
 // #include <semaphore.h>
 #include <dispatch/dispatch.h>
 
-#include "int.h"
+#include "intrinsics.h"
 #include "work_queue.h"
-
-// TODO: move me somewhere else
-#define assert( predicate ) { if( !( predicate ) ) { __builtin_trap(); } }
-#define array_count( x ) ( sizeof( x ) / sizeof( ( x )[ 0 ] ) )
 
 #define read_barrier() asm volatile ( "" ::: "memory" )
 #define write_barrier() asm volatile ( "" ::: "memory" )

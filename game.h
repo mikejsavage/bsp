@@ -4,7 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
-#include "int.h"
+#include "intrinsics.h"
 #include "terrain_manager.h"
 #include "work_queue.h"
 

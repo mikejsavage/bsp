@@ -7,7 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "int.h"
+#include "intrinsics.h"
 #include "heightmap.h"
 #include "stb_image.h"
 #include "stb_perlin.h"

@@ -7,7 +7,7 @@
 #include <GLFW/glfw3.h>
 
 #include "game.h"
-#include "int.h"
+#include "intrinsics.h"
 #include "gl.h"
 
 #define GAME_LIBRARY_PATH "hm.so"

@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
-#include "int.h"
+#include "intrinsics.h"
 #include "stb_image.h"
 #include "stb_image_write.h"
 

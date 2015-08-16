@@ -12,7 +12,7 @@
 
 #include <glm/glm.hpp>
 
-#include "int.h"
+#include "intrinsics.h"
 #include "heightmap.h"
 #include "terrain_manager.h"
 

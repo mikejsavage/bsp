@@ -4,7 +4,7 @@
 #include <string>
 #include <glm/glm.hpp>
 
-#include "int.h"
+#include "intrinsics.h"
 #include "heightmap.h"
 
 class TerrainManager {

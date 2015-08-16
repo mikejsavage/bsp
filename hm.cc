@@ -9,7 +9,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "game.h"
-#include "int.h"
+#include "intrinsics.h"
 #include "heightmap.h"
 #include "terrain_manager.h"
 #include "work_queue.h"
