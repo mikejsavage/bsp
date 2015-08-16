@@ -1,20 +1,14 @@
 #include <err.h>
 #include <pthread.h>
-// #include <semaphore.h>
-#include <dispatch/dispatch.h>
 
 #include "intrinsics.h"
 #include "work_queue.h"
+#include "platform_barrier.h"
+#include "platform_semaphore.h"
 
-#define read_barrier() asm volatile ( "" ::: "memory" )
-#define write_barrier() asm volatile ( "" ::: "memory" )
-
-#include <stdio.h>
 static bool workqueue_step( WorkQueue * const queue ) {
 	const u16 current_head = queue->head;
 	const u16 new_head = ( current_head + 1 ) % array_count( queue->jobs );
-
-	// read_barrier(); TODO:
 
 	if( current_head != queue->tail ) {
 		if( __sync_bool_compare_and_swap( &queue->head, current_head, new_head ) ) {
@@ -36,11 +30,8 @@ static void * workqueue_worker( void * data ) {
 
 	for( ;; ) {
 		if( !workqueue_step( queue ) ) {
-			// sem_wait( queue->sem );
-			dispatch_semaphore_wait( queue->sem, DISPATCH_TIME_FOREVER );
+			semaphore_wait( &queue->sem );
 		}
-
-		// pthread_testcancel();
 	}
 
 	return nullptr;
@@ -48,11 +39,7 @@ static void * workqueue_worker( void * data ) {
 
 void workqueue_init( WorkQueue * const queue, const u32 num_threads ) {
 	*queue = { };
-
-	// if( sem_init( queue->sem, 0, 0 ) == -1 ) {
-	// 	err( 1, "can't create semaphore" );
-	// }
-	queue->sem = dispatch_semaphore_create( 0 );
+	semaphore_init( &queue->sem );
 
 	for( u32 i = 0; i < num_threads; i++ ) {
 		pthread_t thread;
@@ -71,8 +58,7 @@ void workqueue_enqueue( WorkQueue * const queue, WorkQueueCallback * const callb
 	write_barrier();
 	queue->tail = ( queue->tail + 1 ) % array_count( queue->jobs );
 
-	// sem_post( queue->sem );
-	dispatch_semaphore_signal( queue->sem );
+	semaphore_signal( &queue->sem );
 }
 
 void workqueue_exhaust( WorkQueue * const queue ) {

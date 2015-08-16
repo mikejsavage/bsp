@@ -1,9 +1,8 @@
 #ifndef _WORK_QUEUE_H_
 #define _WORK_QUEUE_H_
 
-// #include <semaphore.h>
-#include <dispatch/dispatch.h>
 #include "intrinsics.h"
+#include "platform_semaphore.h"
 
 #define WORK_QUEUE_CALLBACK( name ) void name( void * const data )
 typedef WORK_QUEUE_CALLBACK( WorkQueueCallback );
@@ -16,8 +15,7 @@ struct Job {
 struct WorkQueue {
 	Job jobs[ 256 ];
 
-	// sem_t * sem;
-	dispatch_semaphore_t sem;
+	Semaphore sem;
 
 	// using head/length means we need to an atomic pair which is a pain
 	volatile u16 head;
