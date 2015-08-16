@@ -4,3 +4,7 @@ pp
 *.so
 ttvfs
 *.bsp
+
+*.jpg
+*.png
+*.parts
