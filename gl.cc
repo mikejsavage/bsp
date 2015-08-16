@@ -108,7 +108,8 @@ GLFWwindow * GL::init() {
 	glDepthFunc( GL_LEQUAL );
 
 	glEnable( GL_CULL_FACE );
-	glCullFace( GL_FRONT );
+	glCullFace( GL_FRONT ); // TODO: change this to back like everyone else
+	glFrontFace( GL_CCW ); // not necessary but I always forget the default
 
 	return window;
 }
