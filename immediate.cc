@@ -17,10 +17,6 @@ void immediate_triangle( ImmediateContext * const ctx, const glm::vec3 v1, const
 }
 
 void immediate_render( ImmediateContext * const ctx, const GLuint at_position ) {
-	GLuint vao;
-	glGenVertexArrays( 1, &vao );
-	glBindVertexArray( vao );
-
 	GLuint vbo;
 	glGenBuffers( 1, &vbo );
 
@@ -32,12 +28,7 @@ void immediate_render( ImmediateContext * const ctx, const GLuint at_position ) 
 
 	glDrawArrays( GL_TRIANGLES, 0, ctx->num_triangles * 3 );
 
-	glBindVertexArray( 0 );
-
 	glDeleteBuffers( 1, &vbo );
-	glDeleteVertexArrays( 1, &vao );
-
-	printf( "drew %zu triangles vao %u vbo %u\n", ctx->num_triangles, vbo, vbo );
 }
 
 void immediate_clear( ImmediateContext * const ctx ) {
