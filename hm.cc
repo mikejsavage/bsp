@@ -13,20 +13,26 @@
 #include "heightmap.h"
 #include "terrain_manager.h"
 #include "work_queue.h"
-// #include "stb_easy_font.h"
 #include "stb_image.h"
 #include "stb_perlin.h"
 
-#define TEXT( x, y, form, ... ) \
-	do { \
-		static char buffer[ 99999 ]; \
-		static char text[ 2048 ]; \
-		sprintf( text, form, __VA_ARGS__ ); \
-		const int num_quads = stb_easy_font_print( x, y, text, nullptr, buffer, sizeof( buffer ) ); \
-		glColor3f(1,1,1); \
-		glVertexPointer(2, GL_FLOAT, 16, buffer); \
-		glDrawArrays(GL_QUADS, 0, num_quads*4); \
-	} while( 0 )
+#include "shitty_glsl.h"
+
+static const GLchar * const vert_src = GLSL(
+	in vec3 position;
+
+	void main() {
+		gl_Position = vec4( position, 1.0 );
+	}
+);
+
+static const GLchar * frag_src = GLSL(
+	out vec4 screen_colour;
+
+	void main() {
+		screen_colour = vec4( 1.0, 0.0, 0.0, 1.0 );
+	}
+);
 
 glm::vec3 angles_to_vector( const glm::vec3 & angles ) {
 	return glm::vec3(
@@ -64,6 +70,39 @@ extern "C" GAME_INIT( game_init ) {
 		workqueue_enqueue( &state->background_tasks, testwq, &nums[ i ] );
 	}
 	workqueue_exhaust( &state->background_tasks );
+
+	state->test_shader = compile_shader( vert_src, frag_src, "screen_colour" );
+	state->test_at_position = glGetAttribLocation( state->test_shader, "position" );
+
+	// TODO: persistent memory should be an arena
+	const size_t triangles = 65536;
+	ImmediateTriangle * immediate_memory = ( ImmediateTriangle * ) reserve_persistent( mem, sizeof( ImmediateTriangle ) * triangles );
+	immediate_init( &state->test_immediate, immediate_memory, triangles );
+
+	const float aspect = 640.0f / 480.0f;
+	const float crosshair_thickness = 0.005;
+	const float crosshair_length = 0.02;
+
+	immediate_triangle( &state->test_immediate,
+		glm::vec3( -crosshair_length, -crosshair_thickness, 0 ),
+		glm::vec3( -crosshair_length,  crosshair_thickness, 0 ),
+		glm::vec3(  crosshair_length,  crosshair_thickness, 0 )
+	);
+	immediate_triangle( &state->test_immediate,
+		glm::vec3(  crosshair_length,  crosshair_thickness, 0 ),
+		glm::vec3(  crosshair_length, -crosshair_thickness, 0 ),
+		glm::vec3( -crosshair_length, -crosshair_thickness, 0 )
+	);
+	immediate_triangle( &state->test_immediate,
+		glm::vec3( -crosshair_thickness / aspect,  crosshair_length * aspect , 0 ),
+		glm::vec3(  crosshair_thickness / aspect,  crosshair_length * aspect , 0 ),
+		glm::vec3(  crosshair_thickness / aspect, -crosshair_length * aspect , 0 )
+	);
+	immediate_triangle( &state->test_immediate,
+		glm::vec3(  crosshair_thickness / aspect, -crosshair_length * aspect , 0 ),
+		glm::vec3( -crosshair_thickness / aspect, -crosshair_length * aspect , 0 ),
+		glm::vec3( -crosshair_thickness / aspect,  crosshair_length * aspect , 0 )
+	);
 
 	glClearColor( 0, 0.5, 0.7, 1 );
 }
@@ -106,18 +145,8 @@ extern "C" GAME_FRAME( game_frame ) {
 
 	state->tm.render( VP );
 
-	// glLoadIdentity();
-	//
-	// glBegin( GL_TRIANGLE_STRIP );
-	// glColor3f( 0.2, 0.2, 0.2 );
-	// glVertex2f( -1, 1 );
-	// glVertex2f( 1, 1 );
-	// glVertex2f( -1, 0.95 );
-	// glVertex2f( 1, 0.95 );
-	// glEnd();
-	//
-	// glOrtho( 0, 640, 480, 0, -1, 1 );
-	// TEXT( 2, 2, "%d", ( int ) ( 1 / dt ) );
-	//
-	// glPopMatrix();
+	glDisable( GL_DEPTH_TEST );
+	glUseProgram( state->test_shader );
+	immediate_render( &state->test_immediate, state->test_at_position );
+	glEnable( GL_DEPTH_TEST );
 }

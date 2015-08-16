@@ -6,6 +6,7 @@
 
 #include "intrinsics.h"
 #include "terrain_manager.h"
+#include "immediate.h"
 #include "work_queue.h"
 
 struct GameState {
@@ -14,6 +15,10 @@ struct GameState {
 	TerrainManager tm;
 
 	WorkQueue background_tasks;
+
+	GLuint test_shader;
+	GLuint test_at_position;
+	ImmediateContext test_immediate;
 };
 
 struct GameMemory {
