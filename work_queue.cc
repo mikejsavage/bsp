@@ -24,8 +24,8 @@ static bool workqueue_step( WorkQueue * const queue ) {
 	return false;
 }
 
-static void * workqueue_worker( void * data ) {
-	WorkQueue * queue = ( WorkQueue * ) data;
+static void * workqueue_worker( void * const data ) {
+	WorkQueue * const queue = ( WorkQueue * const ) data;
 
 	for( ;; ) {
 		if( !workqueue_step( queue ) ) {
