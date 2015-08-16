@@ -37,10 +37,14 @@ inline void mike_assert( const bool predicate, const char * const message ) {
 #define assert( predicate ) mike_assert( predicate, "assertion failed at " __FILE__ " line " STRINGIFY( __LINE__ ) ": " #predicate )
 
 #define is_power_of_2( n ) ( ( ( n ) & ( ( n ) - 1 ) ) == 0 )
+
 #define align_power_of_2( n, alignment ) ( ( ( n ) + ( alignment ) - 1 ) & ~( ( alignment ) - 1 ) )
 #define align4( n ) align_power_of_2( n, 4 )
 #define align8( n ) align_power_of_2( n, 8 )
 #define align16( n ) align_power_of_2( n, 16 )
+
+// TODO: clashes with some crap in std::string
+#define align_TODO( n, alignment ) ( ( ( n ) + ( alignment ) - 1 ) / ( alignment ) * ( alignment ) )
 
 inline size_t kilobytes( const size_t kb ) {
 	return kb * 1024;
