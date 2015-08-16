@@ -1,6 +1,7 @@
 #ifndef _INTRINSICS_H_
 #define _INTRINSICS_H_
 
+#include <stdio.h>
 #include <stdint.h>
 #include "platform_backtrace.h"
 
@@ -22,7 +23,18 @@ typedef double f64;
 #ifdef assert
 #undef assert
 #endif
-#define assert( predicate ) { if( !( predicate ) ) { print_backtrace(); __builtin_trap(); } }
+
+inline void mike_assert( const bool predicate, const char * const message ) {
+	if( !( predicate ) ) {
+		puts( message );
+		print_backtrace();
+		__builtin_trap();
+	}
+}
+
+#define STRINGIFY_HELPER( x ) #x
+#define STRINGIFY( x ) STRINGIFY_HELPER( x )
+#define assert( predicate ) mike_assert( predicate, "assertion failed at " __FILE__ " line " STRINGIFY( __LINE__ ) ": " #predicate )
 
 #define is_power_of_2( n ) ( ( ( n ) & ( ( n ) - 1 ) ) == 0 )
 #define align_power_of_2( n, alignment ) ( ( ( n ) + ( alignment ) - 1 ) & ~( ( alignment ) - 1 ) )
