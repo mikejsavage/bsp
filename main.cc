@@ -64,7 +64,7 @@ bool should_reload_game( const char * const path, const time_t lib_write_time ) 
 int main( int argc, char ** argv ) {
 	Game game = load_game( GAME_LIBRARY_PATH );
 	GameMemory mem = { };
-	mem.persistent_size = 64LL * 1024 * 1024;
+	mem.persistent_size = megabytes( 64 );
 	mem.persistent = new u8[ mem.persistent_size ];
 
 	GameState * state = ( GameState * ) reserve_persistent( mem, sizeof( GameState ) );
