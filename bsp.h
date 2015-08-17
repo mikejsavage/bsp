@@ -2,7 +2,7 @@
 #define _BSP_H_
 
 #include <string>
-#include "int.h"
+#include "intrinsics.h"
 
 enum BSP_Lump {
 	LUMP_ENTITIES = 0,
@@ -43,7 +43,7 @@ struct BSP_Texture {
 	i32 surface_flags;
 	i32 content_flags;
 };
-	
+
 struct BSP_Plane {
 	glm::vec3 n;
 	float d;
@@ -149,9 +149,8 @@ struct BSP_Intersection {
 };
 
 class BSP {
-	friend class BSP_Renderer;
-
 private:
+public: // TODO
 	char * contents;
 
 	u32 num_textures;

@@ -6,6 +6,8 @@
 
 #include "intrinsics.h"
 #include "terrain_manager.h"
+#include "bsp.h"
+#include "bsp_renderer.h"
 #include "immediate.h"
 #include "work_queue.h"
 
@@ -14,10 +16,16 @@ struct GameState {
 	glm::vec3 angles;
 	TerrainManager tm;
 
+	BSP bsp;
+	BSPRenderer bspr;
+
 	WorkQueue background_tasks;
 
 	GLuint test_shader;
 	GLuint test_at_position;
+	GLuint test_at_colour;
+	GLuint test_un_VP;
+
 	ImmediateContext test_immediate;
 };
 

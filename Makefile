@@ -1,7 +1,7 @@
-all: medfall hm.so pp
+all: medfall bsp.so hm.so pp
 
 OBJS = main.o gl.o
-BSPOBJS = bsp.o bsp_renderer.o gl.o
+BSPOBJS = bsp.o bsp_renderer.o gl.o memory_arena.o
 HMOBJS = hm.o heightmap.o terrain_manager.o work_queue.o stb_image.o stb_perlin.o immediate.o
 PPOBJS = pp.o stb_image.o stb_image_write.o
 

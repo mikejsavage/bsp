@@ -2,45 +2,43 @@
 #include <fstream>
 #include <math.h>
 
-#include <GL/glu.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
-#include "int.h"
+#include "game.h"
+#include "intrinsics.h"
 #include "gl.h"
 #include "bsp.h"
 #include "bsp_renderer.h"
-#include "stb_easy_font.h"
+#include "shitty_glsl.h"
 
-const float EPSILON = 1.0 / 32.0;
+static const GLchar * const vert_src = GLSL(
+	in vec3 position;
+	in vec3 colour;
 
-#define TEXT( x, y, form, ... ) \
-	do { \
-		static char buffer[ 99999 ]; \
-		static char text[ 2048 ]; \
-		sprintf( text, form, __VA_ARGS__ ); \
-		const int num_quads = stb_easy_font_print( x, y, text, NULL, buffer, sizeof( buffer ) ); \
-		glColor3f(1,1,1); \
-		glVertexPointer(2, GL_FLOAT, 16, buffer); \
-		glDrawArrays(GL_QUADS, 0, num_quads*4); \
-	} while( 0 )
+	out vec3 frag_colour;
 
-void glterrible() {
-	printf( "glterrible\n" );
-	GLenum err = glGetError();
-	const char * error;
+	uniform mat4 VP;
 
-	switch(err) {
-		case GL_INVALID_OPERATION:      error="INVALID_OPERATION";      break;
-		case GL_INVALID_ENUM:           error="INVALID_ENUM";           break;
-		case GL_INVALID_VALUE:          error="INVALID_VALUE";          break;
-		case GL_OUT_OF_MEMORY:          error="OUT_OF_MEMORY";          break;
-		case GL_INVALID_FRAMEBUFFER_OPERATION:  error="INVALID_FRAMEBUFFER_OPERATION";  break;
-		default: error = "shit bro"; break;
+	void main() {
+		gl_Position = VP * vec4( position, 1.0 );
+		frag_colour = colour;
 	}
+);
 
-	printf( "GL error: %s\n", error );
-}
+static const GLchar * frag_src = GLSL(
+	in vec3 frag_colour;
+
+	out vec4 screen_colour;
+
+	void main() {
+		screen_colour = vec4( frag_colour, 1.0 );
+	}
+);
+
+static const float EPSILON = 1.0 / 32.0;
 
 // TODO: bit twiddling?
 bool same_sign( const float a, const float b ) {
@@ -84,7 +82,6 @@ BSP::BSP( const std::string filename ) {
 BSP::~BSP() {
 	delete contents;
 }
-
 
 template< typename T >
 void BSP::load_lump( u32 & num_ts, T *& ts, const BSP_Lump lump ) {
@@ -255,72 +252,61 @@ glm::vec3 angles_to_vector( const glm::vec3 & angles ) {
 	);
 }
 
-int main() {
-	BSP bsp( "acidwdm2.bsp" );
-	GLFWwindow * const window = GL::init();
+static const glm::mat4 P( glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10000.0f ) );
 
-	glm::vec3 pos( 0, -100, 450 );
-	glm::vec3 angles = d2r( glm::vec3( -90, 135, 0 ) );
-	const glm::vec3 end = pos + angles_to_vector( angles ) * 1000.0f;
+extern "C" GAME_INIT( game_init ) {
+	state->bsp = BSP( "acidwdm2.bsp" );
 
-	Intersection tt;
-	bool hit = bsp.trace_seg( pos, end, tt );
+	u8 * memory = reserve_persistent( mem, megabytes( 10 ) );
+	MemoryArena arena;
+	memarena_init( &arena, memory, megabytes( 10 ) );
 
-	printf( "%.3f: %s %.1f %.1f %.1f\n", tt.t, hit ? "yes" : "no", tt.pos.x, tt.pos.y, tt.pos.z );
+	bspr_init( &state->bspr, &arena, &state->bsp );
 
-	float lastFrame = glfwGetTime();
+	state->pos = glm::vec3( 0, -100, 450 );
+	state->angles = glm::radians( ( glm::vec3( -90, 135, 0 ) ) );
 
-	gluPerspective( 120.0f, 800.0f / 600.0f, 0.1f, 10000.0f );
+	state->test_shader = compile_shader( vert_src, frag_src, "screen_colour" );
+	state->test_at_position = glGetAttribLocation( state->test_shader, "position" );
+	state->test_at_colour = glGetAttribLocation( state->test_shader, "colour" );
+	state->test_un_VP = glGetUniformLocation( state->test_shader, "VP" );
+}
 
-	while( !glfwWindowShouldClose( window ) ) {
-		const float now = glfwGetTime();
-		const float dt = now - lastFrame;
+extern "C" GAME_FRAME( game_frame ) {
+	GameState * state = ( GameState * ) mem.persistent;
 
-		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-		const int fb = glfwGetKey( window, 'W' ) - glfwGetKey( window, 'S' );
-		const int lr = glfwGetKey( window, 'A' ) - glfwGetKey( window, 'D' );
+	const int fb = glfwGetKey( window, 'W' ) - glfwGetKey( window, 'S' );
+	const int lr = glfwGetKey( window, 'A' ) - glfwGetKey( window, 'D' );
+	const int dz = glfwGetKey( window, GLFW_KEY_SPACE ) - glfwGetKey( window, GLFW_KEY_LEFT_SHIFT );
 
-		if( fb ) {
-			pos += angles_to_vector( angles ) * 320.0f * dt * ( float ) fb;
-		}
+	const int pitch = glfwGetKey( window, GLFW_KEY_UP ) - glfwGetKey( window, GLFW_KEY_DOWN );
+	const int yaw = glfwGetKey( window, GLFW_KEY_RIGHT ) - glfwGetKey( window, GLFW_KEY_LEFT );
 
-		if( lr ) {
-			const glm::vec3 sideways = glm::vec3( -cosf( angles.y ), sinf( angles.y ), 0 );
-			pos += sideways * 320.0f * dt * ( float ) lr;
-		}
+	state->angles.x += pitch * dt * 2;
+	state->angles.y += yaw * dt * 2;
 
-		// TODO: do matrices like a big boy
-		glPushMatrix();
+	state->pos += angles_to_vector( state->angles ) * 100.0f * dt * ( float ) fb;
+	const glm::vec3 sideways = glm::vec3( -cosf( state->angles.y ), sinf( state->angles.y ), 0 );
+	state->pos += sideways * 100.0f * dt * ( float ) lr;
+	state->pos.z += ( float ) dz * 100.0f * dt;
 
-		glRotatef( angles.x * 180 / M_PI, 1.0, 0.0, 0.0 );
-		glRotatef( angles.y * 180 / M_PI, 0.0, 0.0, 1.0 );
-		glTranslatef( -pos.x, -pos.y, -pos.z );
+	const glm::mat4 VP = glm::translate(
+		glm::rotate(
+			glm::rotate(
+				P,
+				state->angles.x,
+				glm::vec3( 1, 0, 0 )
+			),
+			state->angles.y,
+			glm::vec3( 0, 0, 1 )
+		),
+		-state->pos
+	);
 
-		BSP_Renderer::render( bsp, pos );
+	glUseProgram( state->test_shader );
+	glUniformMatrix4fv( state->test_un_VP, 1, GL_FALSE, glm::value_ptr( VP ) );
 
-		glLoadIdentity();
-
-		glBegin( GL_TRIANGLE_STRIP );
-		glColor3f( 0.2, 0.2, 0.2 );
-		glVertex2f( -1, 1 );
-		glVertex2f( 1, 1 );
-		glVertex2f( -1, 0.95 );
-		glVertex2f( 1, 0.95 );
-		glEnd();
-
-		glOrtho( 0, 640, 480, 0, -1, 1 );
-		TEXT( 2, 2, "%d", ( int ) ( 1 / dt ) );
-
-		glPopMatrix();
-
-		glfwSwapBuffers( window );
-		glfwPollEvents();
-
-		lastFrame = now;
-	}
-
-	GL::term();
-
-	return 0;
+	bspr_render( &state->bspr, state->pos, state->test_at_position, state->test_at_colour );
 }
