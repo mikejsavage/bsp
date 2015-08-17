@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <err.h>
 #include <time.h>
 #include <dlfcn.h>
 #include <sys/stat.h>
@@ -37,12 +38,19 @@ Game load_game( const char * const path ) {
 		game.frame = ( GameFrame * ) dlsym( game.lib, "game_frame" );
 
 		if( !game.init || !game.frame ) {
+			warnx( "load_game: couldn't find game functions (init = %p, frame = %p)", game.init, game.frame );
+
 			game.init = nullptr;
 			game.frame = nullptr;
 		}
 	}
 
 	game.lib_write_time = file_last_write_time( path );
+
+	const char * const error = dlerror();
+	if( error ) {
+		warnx( "load_game: %s", error );
+	}
 
 	return game;
 }
