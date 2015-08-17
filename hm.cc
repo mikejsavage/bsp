@@ -59,7 +59,7 @@ static WORK_QUEUE_CALLBACK( testwq ) {
 
 extern "C" GAME_INIT( game_init ) {
 	state->pos = glm::vec3( 15000, 3000, 50 );
-	state->angles = glm::vec3( glm::radians( glm::vec3( -90, 45, 0 ) ) );
+	state->angles = glm::radians( glm::vec3( -90, 45, 0 ) );
 	state->tm.use( "Srtm_ramp2.world.21600x10800.jpg.parts" );
 	state->tm.teleport( state->pos );
 
