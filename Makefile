@@ -10,7 +10,8 @@ CXXFLAGS += -std=c++11 -O2 -pthread -ggdb3 $(WARNINGS) -DGL_GLEXT_PROTOTYPES -DG
 
 # OS detection
 ifneq ($(shell uname -s),Darwin)
-	LDFLAGS += -lGL -lGLEW -lglfw
+	CXXFLAGS += -fPIC
+	LDFLAGS += -lGL -lGLEW -lglfw -ldl
 else
 	# 8)
 	CXXFLAGS += -I/usr/local/Cellar/glfw3/3.1.1/include
