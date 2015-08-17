@@ -9,9 +9,9 @@
 
 class TerrainManager {
 private:
-	const static int TILE_SIZE = 128;
-	const static int REGION_SIZE = 5;
-	const static int REGION_HALF = REGION_SIZE / 2;
+	static const int TILE_SIZE = 128;
+	static const int REGION_SIZE = 5;
+	static const int REGION_HALF = REGION_SIZE / 2;
 
 	std::string dir;
 
