@@ -6,7 +6,7 @@ struct Semaphore {
 };
 
 inline void semaphore_init( Semaphore * const sem ) {
-	const int ok = sem_init( &sem->sem, 0, 0 );
+	const int ok = sem_init( sem->sem, 0, 0 );
 	if( ok == -1 ) {
 		err( 1, "sem_init failed" );
 	}
