@@ -11,8 +11,6 @@
 #include "intrinsics.h"
 #include "gl.h"
 
-#define GAME_LIBRARY_PATH "hm.so"
-
 struct Game {
 	void * lib;
 	GameInit * init;
@@ -63,7 +61,9 @@ bool should_reload_game( const char * const path, const time_t lib_write_time ) 
 }
 
 int main( int argc, char ** argv ) {
-	Game game = load_game( GAME_LIBRARY_PATH );
+	const char * const game_library_path = argc == 2 ? argv[ 1 ] : "./hm.so";
+
+	Game game = load_game( game_library_path );
 	GameMemory mem = { };
 	mem.persistent_size = megabytes( 64 );
 	mem.persistent = new u8[ mem.persistent_size ];
@@ -85,9 +85,9 @@ int main( int argc, char ** argv ) {
 		}
 
 		if( ( i32 ) current_frame_time != ( i32 ) last_frame_time ) {
-			if( should_reload_game( GAME_LIBRARY_PATH, game.lib_write_time ) ) {
+			if( should_reload_game( game_library_path, game.lib_write_time ) ) {
 				unload_game( &game );
-				game = load_game( GAME_LIBRARY_PATH );
+				game = load_game( game_library_path );
 			}
 		}
 
