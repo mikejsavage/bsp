@@ -6,7 +6,7 @@ HMOBJS = hm.o heightmap.o terrain_manager.o work_queue.o stb_image.o stb_perlin.
 PPOBJS = pp.o stb_image.o stb_image_write.o
 
 WARNINGS = -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-write-strings
-CXXFLAGS += -std=c++11 -O2 $(WARNINGS) -ggdb3 -DGL_GLEXT_PROTOTYPES -pthread
+CXXFLAGS += -std=c++11 -O2 -pthread -ggdb3 $(WARNINGS) -DGL_GLEXT_PROTOTYPES -DGLFW_INCLUDE_NONE
 
 # OS detection
 ifneq ($(shell uname -s),Darwin)
@@ -14,7 +14,6 @@ ifneq ($(shell uname -s),Darwin)
 	LDFLAGS += -lGLU
 else
 	# 8)
-	CXXFLAGS += -DGLFW_INCLUDE_GLCOREARB
 	CXXFLAGS += -I/usr/local/Cellar/glfw3/3.1.1/include
 	CXXFLAGS += -I/usr/local/Cellar/glm/0.9.6.3/include
 	LDFLAGS += -lm -framework Cocoa -framework OpenGL -framework IOKit -framework CoreFoundation -framework CoreVideo

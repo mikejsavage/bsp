@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "platform_opengl.h"
 #include <GLFW/glfw3.h>
 
 #include "game.h"

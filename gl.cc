@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <err.h>
+
+#include "platform_opengl.h"
 #include <GLFW/glfw3.h>
 
 #ifndef __APPLE__
