@@ -41,6 +41,7 @@ void immediate_render( ImmediateContext * const ctx, const GLuint at_position, c
 
 	glDrawArrays( GL_TRIANGLES, 0, ctx->num_triangles * 3 );
 
+	glBindBuffer( GL_ARRAY_BUFFER, 0 );
 	glDeleteBuffers( 2, vbos );
 }
 
