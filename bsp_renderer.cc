@@ -9,6 +9,7 @@
 #include "bsp.h"
 #include "bsp_renderer.h"
 #include "memory_arena.h"
+#include "immediate.h"
 
 glm::vec3 bspr_face_colour( const BSP * const bsp, const BSP_Face & face ) {
 	if(strcmp(bsp->textures[face.texture].name, "textures/acidwdm2/wall_olive033") == 0) {
@@ -132,19 +133,48 @@ void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP *
 	}
 }
 
-static void bspr_render_leaf( const BSPRenderer * const bspr, const u32 leaf, const GLuint at_position, const GLuint at_colour ) {
-	glBindVertexArray( bspr->vaos[ leaf ] );
+// static void bspr_render_leaf( const BSPRenderer * const bspr, const u32 leaf, const GLuint at_position, const GLuint at_colour ) {
+// 	glBindVertexArray( bspr->vaos[ leaf ] );
+//
+// 	glBindBuffer( GL_ARRAY_BUFFER, bspr->vbos[ leaf * 2 ] );
+// 	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, bspr->ebos[ leaf ] );
+// 	glEnableVertexAttribArray( at_position );
+// 	glVertexAttribPointer( at_position, 3, GL_FLOAT, GL_FALSE, 0, 0 );
+//
+// 	glBindBuffer( GL_ARRAY_BUFFER, bspr->vbos[ leaf * 2 + 1 ] );
+// 	glEnableVertexAttribArray( at_colour );
+// 	glVertexAttribPointer( at_colour, 3, GL_FLOAT, GL_FALSE, 0, 0 );
+//
+// 	glDrawElements( GL_TRIANGLES, bspr->vertex_counts[ leaf ], GL_UNSIGNED_INT, 0 );
+// }
 
-	glBindBuffer( GL_ARRAY_BUFFER, bspr->vbos[ leaf * 2 ] );
-	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, bspr->ebos[ leaf ] );
-	glEnableVertexAttribArray( at_position );
-	glVertexAttribPointer( at_position, 3, GL_FLOAT, GL_FALSE, 0, 0 );
+static void bspr_render_leaf( const BSPRenderer * const bspr, const u32 l, const GLuint at_position, const GLuint at_colour ) {
+	const BSP & bsp = *bspr->bsp;
+	const BSP_Leaf & leaf = bspr->bsp->leaves[ l ];
 
-	glBindBuffer( GL_ARRAY_BUFFER, bspr->vbos[ leaf * 2 + 1 ] );
-	glEnableVertexAttribArray( at_colour );
-	glVertexAttribPointer( at_colour, 3, GL_FLOAT, GL_FALSE, 0, 0 );
+	ImmediateTriangle buffer[ 2048 ];
+	ImmediateContext immediate;
+	immediate_init( &immediate, buffer, 2048 );
 
-	glDrawElements( GL_TRIANGLES, bspr->vertex_counts[ leaf ], GL_UNSIGNED_INT, 0 );
+	for( u32 i = 0; i < leaf.num_faces; i++ ) {
+		const BSP_LeafFace & leaf_face = bsp.leaf_faces[ i + leaf.init_face ];
+		const BSP_Face & face = bsp.faces[ leaf_face ];
+
+		const glm::vec3 colour = bspr_face_colour( &bsp, face );
+		const BSP_Vertex * const vertices = &bsp.vertices[ face.init_vert ];
+		const i32 * const indices = &bsp.mesh_verts[ face.init_mesh_vert ];
+
+		for( i32 j = 0; j < face.num_mesh_verts; j += 3 ) {
+			const glm::vec3 & v1 = vertices[ indices[ j + 0 ] ].pos;
+			const glm::vec3 & v2 = vertices[ indices[ j + 1 ] ].pos;
+			const glm::vec3 & v3 = vertices[ indices[ j + 2 ] ].pos;
+
+			immediate_triangle( &immediate, v1, v2, v3, colour );
+		}
+	}
+
+	immediate_render( &immediate, at_position, at_colour );
+	immediate_clear( &immediate );
 }
 
 static const glm::mat4 P( glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10000.0f ) );
