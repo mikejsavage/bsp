@@ -82,7 +82,9 @@ int main( int argc, char ** argv ) {
 
 	game.init( state, mem );
 
-	float last_frame_time = glfwGetTime();
+	const float program_start_time = glfwGetTime();
+	float last_frame_time = program_start_time;
+	u64 total_frames = 0;
 
 	while( !glfwWindowShouldClose( window ) ) {
 		const float current_frame_time = glfwGetTime();
@@ -109,7 +111,11 @@ int main( int argc, char ** argv ) {
 		glfwPollEvents();
 
 		last_frame_time = current_frame_time;
+		total_frames++;
 	}
+
+	const float program_run_time = glfwGetTime() - program_start_time;
+	printf( "FPS: %.1f\n", total_frames / program_run_time );
 
 	unload_game( &game );
 
