@@ -21,17 +21,23 @@
 
 static const GLchar * const vert_src = GLSL(
 	in vec3 position;
+	in vec3 colour;
+
+	out vec3 frag_colour;
 
 	void main() {
 		gl_Position = vec4( position, 1.0 );
+		frag_colour = colour;
 	}
 );
 
 static const GLchar * frag_src = GLSL(
+	in vec3 frag_colour;
+
 	out vec4 screen_colour;
 
 	void main() {
-		screen_colour = vec4( 1.0, 0.0, 0.0, 1.0 );
+		screen_colour = vec4( frag_colour, 1.0 );
 	}
 );
 
@@ -74,6 +80,7 @@ extern "C" GAME_INIT( game_init ) {
 
 	state->test_shader = compile_shader( vert_src, frag_src, "screen_colour" );
 	state->test_at_position = glGetAttribLocation( state->test_shader, "position" );
+	state->test_at_colour = glGetAttribLocation( state->test_shader, "colour" );
 
 	// TODO: persistent memory should be an arena
 	const size_t triangles = 65536;
@@ -87,22 +94,26 @@ extern "C" GAME_INIT( game_init ) {
 	immediate_triangle( &state->test_immediate,
 		glm::vec3( -crosshair_length, -crosshair_thickness, 0 ),
 		glm::vec3( -crosshair_length,  crosshair_thickness, 0 ),
-		glm::vec3(  crosshair_length,  crosshair_thickness, 0 )
+		glm::vec3(  crosshair_length,  crosshair_thickness, 0 ),
+		glm::vec3( 1, 0, 0 )
 	);
 	immediate_triangle( &state->test_immediate,
 		glm::vec3(  crosshair_length,  crosshair_thickness, 0 ),
 		glm::vec3(  crosshair_length, -crosshair_thickness, 0 ),
-		glm::vec3( -crosshair_length, -crosshair_thickness, 0 )
+		glm::vec3( -crosshair_length, -crosshair_thickness, 0 ),
+		glm::vec3( 1, 0, 0 )
 	);
 	immediate_triangle( &state->test_immediate,
 		glm::vec3( -crosshair_thickness / aspect,  crosshair_length * aspect , 0 ),
 		glm::vec3(  crosshair_thickness / aspect,  crosshair_length * aspect , 0 ),
-		glm::vec3(  crosshair_thickness / aspect, -crosshair_length * aspect , 0 )
+		glm::vec3(  crosshair_thickness / aspect, -crosshair_length * aspect , 0 ),
+		glm::vec3( 1, 0, 0 )
 	);
 	immediate_triangle( &state->test_immediate,
 		glm::vec3(  crosshair_thickness / aspect, -crosshair_length * aspect , 0 ),
 		glm::vec3( -crosshair_thickness / aspect, -crosshair_length * aspect , 0 ),
-		glm::vec3( -crosshair_thickness / aspect,  crosshair_length * aspect , 0 )
+		glm::vec3( -crosshair_thickness / aspect,  crosshair_length * aspect , 0 ),
+		glm::vec3( 1, 0, 0 )
 	);
 
 	glClearColor( 0, 0.5, 0.7, 1 );
@@ -148,6 +159,6 @@ extern "C" GAME_FRAME( game_frame ) {
 
 	glDisable( GL_DEPTH_TEST );
 	glUseProgram( state->test_shader );
-	immediate_render( &state->test_immediate, state->test_at_position );
+	immediate_render( &state->test_immediate, state->test_at_position, state->test_at_colour );
 	glEnable( GL_DEPTH_TEST );
 }
