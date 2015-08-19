@@ -26,6 +26,11 @@ void immediate_triangle( ImmediateContext * const ctx,
 }
 
 void immediate_render( ImmediateContext * const ctx, const GLuint at_position, const GLuint at_colour ) {
+	GLuint vao;
+	glGenVertexArrays( 1, &vao );
+
+	glBindVertexArray( vao );
+
 	GLuint vbos[ 2 ];
 	glGenBuffers( 2, vbos );
 
@@ -41,8 +46,11 @@ void immediate_render( ImmediateContext * const ctx, const GLuint at_position, c
 
 	glDrawArrays( GL_TRIANGLES, 0, ctx->num_triangles * 3 );
 
+	glBindVertexArray( 0 );
 	glBindBuffer( GL_ARRAY_BUFFER, 0 );
+
 	glDeleteBuffers( 2, vbos );
+	glDeleteVertexArrays( 1, &vao );
 }
 
 void immediate_clear( ImmediateContext * const ctx ) {
