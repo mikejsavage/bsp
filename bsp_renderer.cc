@@ -82,17 +82,33 @@ void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP *
 	GLuint * ebo_scratch = memarena_push_many( arena, GLuint, 4096 );
 	u32 ebo_scratch_used = 0;
 
-	for( u32 l = 0; l < bspr->bsp->num_leaves; l++ ) {
-		const BSP_Leaf & leaf = bspr->bsp->leaves[ l ];
+	for( u32 l = 0; l < bsp->num_leaves; l++ ) {
+		const BSP_Leaf & leaf = bsp->leaves[ l ];
 
 		for( u32 f = 0; f < leaf.num_faces; f++ ) {
-			const BSP_LeafFace & leaf_face = bspr->bsp->leaf_faces[ f + leaf.init_face ];
-			const BSP_Face & face = bspr->bsp->faces[ leaf_face ];
-			const glm::vec3 colour = bspr_face_colour( bspr->bsp, face );
+			const BSP_LeafFace & leaf_face = bsp->leaf_faces[ f + leaf.init_face ];
+			const BSP_Face & face = bsp->faces[ leaf_face ];
+			const glm::vec3 colour = bspr_face_colour( bsp, face );
 
-			for( i32 v = 0; v < face.num_verts; v++ ) {
-				const BSP_Vertex & vert = bspr->bsp->vertices[ face.init_vert + v ];
-				const glm::vec3 pos = vert.pos;
+			const BSP_Vertex * const vertices = &bsp->vertices[ face.init_vert ];
+			const i32 * const indices = &bsp->mesh_verts[ face.init_mesh_vert ];
+
+			// for( i32 v = 0; v < face.num_verts; v++ ) {
+			// 	const BSP_Vertex & vert = bsp->vertices[ face.init_vert + v ];
+			// 	const glm::vec3 pos = vert.pos;
+                        //
+			// 	pos_scratch[ pos_scratch_used++ ] = pos.x;
+			// 	pos_scratch[ pos_scratch_used++ ] = pos.y;
+			// 	pos_scratch[ pos_scratch_used++ ] = pos.z;
+			// 	colour_scratch[ colour_scratch_used++ ] = colour.x;
+			// 	colour_scratch[ colour_scratch_used++ ] = colour.y;
+			// 	colour_scratch[ colour_scratch_used++ ] = colour.z;
+                        //
+			// 	assert( pos_scratch_used < 4096 && colour_scratch_used < 4096 );
+			// }
+
+			for( i32 m = 0; m < face.num_mesh_verts; m++ ) {
+				const glm::vec3 & pos = vertices[ indices[ m ] ].pos;
 
 				pos_scratch[ pos_scratch_used++ ] = pos.x;
 				pos_scratch[ pos_scratch_used++ ] = pos.y;
@@ -101,16 +117,15 @@ void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP *
 				colour_scratch[ colour_scratch_used++ ] = colour.y;
 				colour_scratch[ colour_scratch_used++ ] = colour.z;
 
+				ebo_scratch_used++;
+
 				assert( pos_scratch_used < 4096 && colour_scratch_used < 4096 );
-			}
-
-			for( i32 m = 0; m < face.num_mesh_verts; m++ ) {
-				const u32 idx = bsp->mesh_verts[ face.init_mesh_vert + m ];
-				const glm::vec3 pos = bspr->bsp->vertices[ face.init_vert + idx ].pos;
-
-				ebo_scratch[ ebo_scratch_used++ ] = idx;
-
-				assert( ebo_scratch_used < 4096 );
+				// const u32 idx = bsp->mesh_verts[ face.init_mesh_vert + m ];
+				// const glm::vec3 pos = bsp->vertices[ face.init_vert + idx ].pos;
+                                //
+				// ebo_scratch[ ebo_scratch_used++ ] = idx;
+                                //
+				// assert( ebo_scratch_used < 4096 );
 			}
 		}
 
@@ -125,6 +140,8 @@ void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP *
 		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, bspr->ebos[ l ] );
 		glBufferData( GL_ELEMENT_ARRAY_BUFFER, ebo_scratch_used * sizeof( GLuint ), ebo_scratch, GL_STATIC_DRAW );
 
+		glBindVertexArray( 0 );
+
 		bspr->vertex_counts[ l ] = ebo_scratch_used;
 
 		pos_scratch_used = 0;
@@ -133,48 +150,22 @@ void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP *
 	}
 }
 
-// static void bspr_render_leaf( const BSPRenderer * const bspr, const u32 leaf, const GLuint at_position, const GLuint at_colour ) {
-// 	glBindVertexArray( bspr->vaos[ leaf ] );
-//
-// 	glBindBuffer( GL_ARRAY_BUFFER, bspr->vbos[ leaf * 2 ] );
-// 	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, bspr->ebos[ leaf ] );
-// 	glEnableVertexAttribArray( at_position );
-// 	glVertexAttribPointer( at_position, 3, GL_FLOAT, GL_FALSE, 0, 0 );
-//
-// 	glBindBuffer( GL_ARRAY_BUFFER, bspr->vbos[ leaf * 2 + 1 ] );
-// 	glEnableVertexAttribArray( at_colour );
-// 	glVertexAttribPointer( at_colour, 3, GL_FLOAT, GL_FALSE, 0, 0 );
-//
-// 	glDrawElements( GL_TRIANGLES, bspr->vertex_counts[ leaf ], GL_UNSIGNED_INT, 0 );
-// }
+static void bspr_render_leaf( const BSPRenderer * const bspr, const u32 leaf, const GLuint at_position, const GLuint at_colour ) {
+	glBindVertexArray( bspr->vaos[ leaf ] );
 
-static void bspr_render_leaf( const BSPRenderer * const bspr, const u32 l, const GLuint at_position, const GLuint at_colour ) {
-	const BSP & bsp = *bspr->bsp;
-	const BSP_Leaf & leaf = bspr->bsp->leaves[ l ];
+	glBindBuffer( GL_ARRAY_BUFFER, bspr->vbos[ leaf * 2 ] );
+	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, bspr->ebos[ leaf ] );
+	glEnableVertexAttribArray( at_position );
+	glVertexAttribPointer( at_position, 3, GL_FLOAT, GL_FALSE, 0, 0 );
 
-	ImmediateTriangle buffer[ 2048 ];
-	ImmediateContext immediate;
-	immediate_init( &immediate, buffer, 2048 );
+	glBindBuffer( GL_ARRAY_BUFFER, bspr->vbos[ leaf * 2 + 1 ] );
+	glEnableVertexAttribArray( at_colour );
+	glVertexAttribPointer( at_colour, 3, GL_FLOAT, GL_FALSE, 0, 0 );
 
-	for( u32 i = 0; i < leaf.num_faces; i++ ) {
-		const BSP_LeafFace & leaf_face = bsp.leaf_faces[ i + leaf.init_face ];
-		const BSP_Face & face = bsp.faces[ leaf_face ];
+	// glDrawElements( GL_TRIANGLES, bspr->vertex_counts[ leaf ], GL_UNSIGNED_INT, 0 );
+	glDrawArrays( GL_TRIANGLES, 0, bspr->vertex_counts[ leaf ] );
 
-		const glm::vec3 colour = bspr_face_colour( &bsp, face );
-		const BSP_Vertex * const vertices = &bsp.vertices[ face.init_vert ];
-		const i32 * const indices = &bsp.mesh_verts[ face.init_mesh_vert ];
-
-		for( i32 j = 0; j < face.num_mesh_verts; j += 3 ) {
-			const glm::vec3 & v1 = vertices[ indices[ j + 0 ] ].pos;
-			const glm::vec3 & v2 = vertices[ indices[ j + 1 ] ].pos;
-			const glm::vec3 & v3 = vertices[ indices[ j + 2 ] ].pos;
-
-			immediate_triangle( &immediate, v1, v2, v3, colour );
-		}
-	}
-
-	immediate_render( &immediate, at_position, at_colour );
-	immediate_clear( &immediate );
+	glBindVertexArray( 0 );
 }
 
 static const glm::mat4 P( glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10000.0f ) );
