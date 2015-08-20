@@ -11,6 +11,7 @@
 #include "game.h"
 #include "intrinsics.h"
 #include "gl.h"
+#include "keys.h"
 
 struct Game {
 	void * lib;
@@ -69,7 +70,7 @@ bool should_reload_game( const char * const path, const time_t lib_write_time ) 
 }
 
 int main( int argc, char ** argv ) {
-	const char * const game_library_path = argc == 2 ? argv[ 1 ] : "./hm.so";
+	const char * const game_library_path = argc == 2 ? argv[ 1 ] : "./bsp.so";
 
 	Game game = load_game( game_library_path );
 	GameMemory mem = { };
@@ -94,7 +95,7 @@ int main( int argc, char ** argv ) {
 			break;
 		}
 
-		if( ( i32 ) current_frame_time != ( i32 ) last_frame_time ) {
+		if( ( s32 ) current_frame_time != ( s32 ) last_frame_time ) {
 			if( should_reload_game( game_library_path, game.lib_write_time ) ) {
 				unload_game( &game );
 				game = load_game( game_library_path );

@@ -40,8 +40,8 @@ struct BSP_Header {
 
 struct BSP_Texture {
 	char name[ 64 ];
-	i32 surface_flags;
-	i32 content_flags;
+	s32 surface_flags;
+	s32 content_flags;
 };
 
 struct BSP_Plane {
@@ -52,19 +52,19 @@ struct BSP_Plane {
 struct BSP_Node {
 	u32 plane;
 
-	i32 pos_child;
-	i32 neg_child;
+	s32 pos_child;
+	s32 neg_child;
 
-	i32 mins[ 3 ];
-	i32 maxs[ 3 ];
+	s32 mins[ 3 ];
+	s32 maxs[ 3 ];
 };
 
 struct BSP_Leaf {
-	i32 cluster;
-	i32 area;
+	s32 cluster;
+	s32 area;
 
-	i32 mins[ 3 ];
-	i32 maxs[ 3 ];
+	s32 mins[ 3 ];
+	s32 maxs[ 3 ];
 
 	u32 init_face;
 	u32 num_faces;
@@ -82,12 +82,12 @@ struct BSP_Brush {
 	u32 init_side;
 	u32 num_sides;
 
-	i32 texture;
+	s32 texture;
 };
 
 struct BSP_BrushSide {
 	u32 plane;
-	i32 texture;
+	s32 texture;
 };
 
 struct BSP_Vertex {
@@ -97,30 +97,30 @@ struct BSP_Vertex {
 	u8 rgba[ 4 ];
 };
 
-typedef i32 BSP_MeshVert;
+typedef s32 BSP_MeshVert;
 
 // LUMP_FOG
 
 struct BSP_Face {
-	i32 texture;
-	i32 effect;
-	i32 type;
+	s32 texture;
+	s32 effect;
+	s32 type;
 
-	i32 init_vert;
-	i32 num_verts;
-	i32 init_mesh_vert;
-	i32 num_mesh_verts;
+	s32 init_vert;
+	s32 num_verts;
+	s32 init_mesh_vert;
+	s32 num_mesh_verts;
 
-	i32 lightmap;
-	i32 lmpos[ 2 ];
-	i32 lmsize[ 2 ];
+	s32 lightmap;
+	s32 lmpos[ 2 ];
+	s32 lmsize[ 2 ];
 	glm::vec3 lmorigin;
 	glm::vec3 a;
 	glm::vec3 b;
 
 	glm::vec3 normal;
 
-	i32 c; i32 d;
+	s32 c; s32 d;
 };
 
 // LUMP_LIGHTING
@@ -192,8 +192,8 @@ public: // TODO
 	void load_vis();
 
 	void trace_seg_brush( const BSP_Brush & brush, BSP_Intersection & bis ) const;
-	void trace_seg_leaf( const i32 leaf_idx, BSP_Intersection & bis ) const;
-	void trace_seg_tree( const i32 node_idx, const glm::vec3 & start, const glm::vec3 & end, const float t1, const float t2, BSP_Intersection & bis ) const;
+	void trace_seg_leaf( const s32 leaf_idx, BSP_Intersection & bis ) const;
+	void trace_seg_tree( const s32 node_idx, const glm::vec3 & start, const glm::vec3 & end, const float t1, const float t2, BSP_Intersection & bis ) const;
 
 	BSP_Leaf & position_to_leaf( const glm::vec3 & pos ) const;
 

@@ -155,7 +155,7 @@ void BSP::trace_seg_brush( const BSP_Brush & brush, BSP_Intersection & bis ) con
 	}
 }
 
-void BSP::trace_seg_leaf( const i32 leaf_idx, BSP_Intersection & bis ) const {
+void BSP::trace_seg_leaf( const s32 leaf_idx, BSP_Intersection & bis ) const {
 	const BSP_Leaf & leaf = leaves[ leaf_idx ];
 
 	for( u32 i = 0; i < leaf.num_brushes; i++ ) {
@@ -168,7 +168,7 @@ void BSP::trace_seg_leaf( const i32 leaf_idx, BSP_Intersection & bis ) const {
 	}
 }
 
-void BSP::trace_seg_tree( const i32 node_idx, const glm::vec3 & start, const glm::vec3 & end, const float t1, const float t2, BSP_Intersection & bis ) const {
+void BSP::trace_seg_tree( const s32 node_idx, const glm::vec3 & start, const glm::vec3 & end, const float t1, const float t2, BSP_Intersection & bis ) const {
 	if( node_idx < 0 ) {
 		trace_seg_leaf( -( node_idx + 1 ), bis );
 		return;
@@ -227,7 +227,7 @@ bool BSP::trace_seg( const glm::vec3 & start, const glm::vec3 & end, Intersectio
 }
 
 BSP_Leaf & BSP::position_to_leaf( const glm::vec3 & pos ) const {
-	i32 node_idx = 0;
+	s32 node_idx = 0;
 
 	do {
 		const BSP_Node & node = nodes[ node_idx ];

@@ -96,9 +96,9 @@ void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP *
 			const glm::vec3 colour = bspr_face_colour( bsp, face );
 
 			const BSP_Vertex * const vertices = &bsp->vertices[ face.init_vert ];
-			const i32 * const indices = &bsp->mesh_verts[ face.init_mesh_vert ];
+			const s32 * const indices = &bsp->mesh_verts[ face.init_mesh_vert ];
 
-			for( i32 v = 0; v < face.num_verts; v++ ) {
+			for( s32 v = 0; v < face.num_verts; v++ ) {
 				const glm::vec3 & pos = vertices[ v ].pos;
 
 				pos_scratch[ pos_scratch_used++ ] = pos;
@@ -107,7 +107,7 @@ void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP *
 				assert( pos_scratch_used < 2048 && colour_scratch_used < 2048 );
 			}
 
-			for( i32 m = 0; m < face.num_mesh_verts; m++ ) {
+			for( s32 m = 0; m < face.num_mesh_verts; m++ ) {
 				ebo_scratch[ ebo_scratch_used++ ] = indices[ m ] + offset;
 
 				assert( ebo_scratch_used < 2048 );
@@ -152,7 +152,7 @@ static void bspr_render_leaf( const BSPRenderer * const bspr, const u32 leaf, co
 static const glm::mat4 P( glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10000.0f ) );
 
 void bspr_render( const BSPRenderer * const bspr, const glm::vec3 & pos, const GLuint at_position, const GLuint at_colour ) {
-	const i32 cluster = bspr->bsp->position_to_leaf( pos ).cluster;
+	const s32 cluster = bspr->bsp->position_to_leaf( pos ).cluster;
 
 	if( cluster == -1 ) {
 		for( u32 i = 0; i < bspr->bsp->num_leaves; i++ ) {
@@ -165,8 +165,8 @@ void bspr_render( const BSPRenderer * const bspr, const glm::vec3 & pos, const G
 	for( u32 i = 0; i < bspr->bsp->num_leaves; i++ ) {
 		const BSP_Leaf & leaf = bspr->bsp->leaves[ i ];
 
-		const i32 other_cluster = leaf.cluster;
-		const i32 pvs_idx = cluster * bspr->bsp->vis->cluster_size + other_cluster / 8;
+		const s32 other_cluster = leaf.cluster;
+		const s32 pvs_idx = cluster * bspr->bsp->vis->cluster_size + other_cluster / 8;
 
 		if( bspr->bsp->vis->pvs[ pvs_idx ] & ( 1 << other_cluster % 8 ) ) {
 			bspr_render_leaf( bspr, i, at_position, at_colour );
