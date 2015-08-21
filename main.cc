@@ -79,6 +79,8 @@ int main( int argc, char ** argv ) {
 
 	GameState * state = ( GameState * ) reserve_persistent( mem, sizeof( GameState ) );
 
+	GameInput input = { };
+
 	GLFWwindow * const window = GL::init();
 
 	game.init( state, mem );
@@ -102,10 +104,21 @@ int main( int argc, char ** argv ) {
 			}
 		}
 
-		// TODO: it would be nice to do input handling out here instead of
-		// just passing in window.
+		// TODO: do this properly
+		input = { };
+		input.keys[ 'w' ] = glfwGetKey( window, GLFW_KEY_W );
+		input.keys[ 'a' ] = glfwGetKey( window, GLFW_KEY_A );
+		input.keys[ 's' ] = glfwGetKey( window, GLFW_KEY_S );
+		input.keys[ 'd' ] = glfwGetKey( window, GLFW_KEY_D );
+		input.keys[ KEY_SPACE ] = glfwGetKey( window, GLFW_KEY_SPACE );
+		input.keys[ KEY_LEFTSHIFT ] = glfwGetKey( window, GLFW_KEY_LEFT_SHIFT );
+		input.keys[ KEY_UPARROW ] = glfwGetKey( window, GLFW_KEY_UP );
+		input.keys[ KEY_DOWNARROW ] = glfwGetKey( window, GLFW_KEY_DOWN );
+		input.keys[ KEY_LEFTARROW ] = glfwGetKey( window, GLFW_KEY_LEFT );
+		input.keys[ KEY_RIGHTARROW ] = glfwGetKey( window, GLFW_KEY_RIGHT );
+
 		if( game.frame ) {
-			game.frame( mem, window, dt );
+			game.frame( mem, &input, dt );
 		}
 
 		glfwSwapBuffers( window );

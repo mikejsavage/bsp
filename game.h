@@ -1,7 +1,6 @@
 #ifndef _GAME_H_
 #define _GAME_H_
 
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
 #include "intrinsics.h"
@@ -10,6 +9,7 @@
 #include "bsp_renderer.h"
 #include "immediate.h"
 #include "work_queue.h"
+#include "keys.h"
 
 struct GameState {
 	glm::vec3 pos;
@@ -46,12 +46,13 @@ inline u8 * reserve_persistent( GameMemory & mem, const size_t size ) {
 }
 
 struct GameInput {
+	bool keys[ KEY_COUNT ];
 };
 
 #define GAME_INIT( name ) void name( GameState * state, GameMemory & mem )
 typedef GAME_INIT( GameInit );
 
-#define GAME_FRAME( name ) void name( GameMemory & mem, GLFWwindow * window, const float dt )
+#define GAME_FRAME( name ) void name( GameMemory & mem, const GameInput * const input, const float dt )
 typedef GAME_FRAME( GameFrame );
 
 #endif // _GAME_H_

@@ -124,12 +124,12 @@ extern "C" GAME_FRAME( game_frame ) {
 
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-	const int fb = glfwGetKey( window, 'W' ) - glfwGetKey( window, 'S' );
-	const int lr = glfwGetKey( window, 'A' ) - glfwGetKey( window, 'D' );
-	const int dz = glfwGetKey( window, GLFW_KEY_SPACE ) - glfwGetKey( window, GLFW_KEY_LEFT_SHIFT );
+	const int fb = input->keys[ 'w' ] - input->keys[ 's' ];
+	const int lr = input->keys[ 'a' ] - input->keys[ 'd' ];
+	const int dz = input->keys[ KEY_SPACE ] - input->keys[ KEY_LEFTSHIFT ];
 
-	const int pitch = glfwGetKey( window, GLFW_KEY_UP ) - glfwGetKey( window, GLFW_KEY_DOWN );
-	const int yaw = glfwGetKey( window, GLFW_KEY_RIGHT ) - glfwGetKey( window, GLFW_KEY_LEFT );
+	const int pitch = input->keys[ KEY_UPARROW ] - input->keys[ KEY_DOWNARROW ];
+	const int yaw = input->keys[ KEY_RIGHTARROW ] - input->keys[ KEY_LEFTARROW ];
 
 	state->angles.x += pitch * dt * 2;
 	state->angles.y += yaw * dt * 2;
