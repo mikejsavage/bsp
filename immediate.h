@@ -6,6 +6,7 @@
 struct ImmediateVertex {
 	glm::vec3 pos;
 	glm::vec4 colour;
+	glm::vec2 uv;
 };
 
 struct ImmediateTriangle {
@@ -18,12 +19,18 @@ struct ImmediateContext {
 	size_t max_triangles;
 };
 
-void immediate_init( ImmediateContext * const ctx, ImmediateTriangle * const memory, const size_t max_triangles );
+void immediate_init( ImmediateContext * const ctx,
+	ImmediateTriangle * const memory, const size_t max_triangles );
 
 void immediate_triangle( ImmediateContext * const ctx,
 	const glm::vec3 v1, const glm::vec3 v2, const glm::vec3 v3, const glm::vec4 colour );
+void immediate_triangle( ImmediateContext * const ctx,
+	const ImmediateVertex v1, const ImmediateVertex v2, const ImmediateVertex v3 );
 
-void immediate_render( ImmediateContext * const ctx, const GLint at_position, const GLint at_colour );
+void immediate_render( ImmediateContext * const ctx,
+	const GLint at_position, const GLint at_colour,
+	const bool textured = false, const GLint at_uv = 0, const GLint un_texture = 0 );
+
 void immediate_clear( ImmediateContext * const ctx );
 
 #endif // _IMMEDIATE_H_

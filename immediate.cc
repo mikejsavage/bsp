@@ -10,17 +10,30 @@ void immediate_init( ImmediateContext * const ctx, ImmediateTriangle * const mem
 	ctx->max_triangles = max_triangles;
 }
 
-void immediate_triangle( ImmediateContext * const ctx,
+void immediate_triangle(
+	ImmediateContext * const ctx,
 	const glm::vec3 v1, const glm::vec3 v2, const glm::vec3 v3,
 	const glm::vec4 colour
 ) {
 	assert( ctx->num_triangles < ctx->max_triangles - 1 );
 
+	const glm::vec2 uv;
 	const ImmediateTriangle triangle = { {
-		{ v1, colour },
-		{ v2, colour },
-		{ v3, colour },
+		{ v1, colour, uv },
+		{ v2, colour, uv },
+		{ v3, colour, uv },
 	} };
+
+	ctx->triangles[ ctx->num_triangles++ ] = triangle;
+}
+
+void immediate_triangle(
+	ImmediateContext * const ctx,
+	const ImmediateVertex v1, const ImmediateVertex v2, const ImmediateVertex v3
+) {
+	assert( ctx->num_triangles < ctx->max_triangles - 1 );
+
+	const ImmediateTriangle triangle = { { v1, v2, v3 } };
 
 	ctx->triangles[ ctx->num_triangles++ ] = triangle;
 }
@@ -28,14 +41,16 @@ void immediate_triangle( ImmediateContext * const ctx,
 void immediate_render(
 	ImmediateContext * const ctx,
 	const GLint at_position, const GLint at_colour,
+	const bool textured, const GLint at_uv, const GLint un_texture
 ) {
 	GLuint vao;
 	glGenVertexArrays( 1, &vao );
 
 	glBindVertexArray( vao );
 
-	GLuint vbos[ 2 ];
-	glGenBuffers( 2, vbos );
+	const u32 num_vbos = 3;
+	GLuint vbos[ num_vbos ];
+	glGenBuffers( num_vbos, vbos );
 
 	glBindBuffer( GL_ARRAY_BUFFER, vbos[ 0 ] );
 	glBufferData( GL_ARRAY_BUFFER, ctx->num_triangles * sizeof( ImmediateTriangle ), ctx->triangles, GL_STATIC_DRAW );
@@ -47,12 +62,21 @@ void immediate_render(
 	glEnableVertexAttribArray( at_colour );
 	glVertexAttribPointer( at_colour, 3, GL_FLOAT, GL_FALSE, sizeof( ImmediateVertex ), ( GLvoid * ) offsetof( ImmediateVertex, colour ) );
 
+	if( textured ) {
+		glBindBuffer( GL_ARRAY_BUFFER, vbos[ 2 ] );
+		glBufferData( GL_ARRAY_BUFFER, ctx->num_triangles * sizeof( ImmediateTriangle ), ctx->triangles, GL_STATIC_DRAW );
+		glEnableVertexAttribArray( at_uv );
+		glVertexAttribPointer( at_uv, 3, GL_FLOAT, GL_FALSE, sizeof( ImmediateVertex ), ( GLvoid * ) offsetof( ImmediateVertex, uv ) );
+
+		glUniform1i( un_texture, 0 );
+	}
+
 	glDrawArrays( GL_TRIANGLES, 0, ctx->num_triangles * 3 );
 
 	glBindVertexArray( 0 );
 	glBindBuffer( GL_ARRAY_BUFFER, 0 );
 
-	glDeleteBuffers( 2, vbos );
+	glDeleteBuffers( num_vbos, vbos );
 	glDeleteVertexArrays( 1, &vao );
 }
 
