@@ -17,6 +17,8 @@
 #include "stb_image.h"
 #include "stb_perlin.h"
 
+#include "platform_opengl.h"
+
 #include "shitty_glsl.h"
 
 static const GLchar * const vert_src = GLSL(
@@ -38,6 +40,34 @@ static const GLchar * frag_src = GLSL(
 
 	void main() {
 		screen_colour = frag_colour;
+	}
+);
+
+static const GLchar * const textured_vert_src = GLSL(
+	in vec3 position;
+	in vec4 colour;
+	in vec2 uv;
+
+	out vec4 frag_colour;
+	out vec2 frag_uv;
+
+	void main() {
+		gl_Position = vec4( position, 1.0 );
+		frag_colour = colour;
+		frag_uv = uv;
+	}
+);
+
+static const GLchar * textured_frag_src = GLSL(
+	in vec4 frag_colour;
+	in vec2 frag_uv;
+
+	uniform sampler2D tex;
+
+	out vec4 screen_colour;
+
+	void main() {
+		screen_colour = texture( tex, frag_uv ) * frag_colour;
 	}
 );
 
@@ -161,5 +191,59 @@ extern "C" GAME_FRAME( game_frame ) {
 	glDisable( GL_DEPTH_TEST );
 	glUseProgram( state->test_shader );
 	immediate_render( &state->test_immediate, state->test_at_position, state->test_at_colour );
+	glEnable( GL_DEPTH_TEST );
+
+
+	glDisable( GL_DEPTH_TEST );
+	glEnable( GL_BLEND );
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+	ImmediateContext imm;
+	ImmediateTriangle asdf[ 32 ];
+	immediate_init( &imm, asdf, 32 );
+
+	const GLuint texshader = compile_shader( textured_vert_src, textured_frag_src, "screen_colour" );
+	glUseProgram( texshader );
+	const GLint at_pos = glGetAttribLocation( texshader, "position" );
+	const GLint at_colour = glGetAttribLocation( texshader, "colour" );
+	const GLint at_uv = glGetAttribLocation( texshader, "uv" );
+	const GLint un_tex = glGetUniformLocation( texshader, "tex" );
+
+	GLuint tex;
+	glGenTextures( 1, &tex );
+	glBindTexture( GL_TEXTURE_2D, tex );
+
+	const glm::vec4 checkerboard[] = {
+		glm::vec4( 0, 0, 0, 0.5 ),
+		glm::vec4( 1, 1, 1, 0.5 ),
+		glm::vec4( 1, 1, 1, 0.5 ),
+		glm::vec4( 0, 0, 0, 0.5 ),
+	};
+
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_FLOAT, checkerboard );
+
+	const float aspect = 640.0f / 480.0f;
+	const glm::vec4 white( 1, 1, 1, 1 );
+	const int num_checks = 20;
+
+	const ImmediateVertex v1 = { glm::vec3( -1.0,  1.0, 0 ), white, glm::vec2( 0, 0 ) };
+	const ImmediateVertex v2 = { glm::vec3( -0.5,  1.0, 0 ), white, glm::vec2( num_checks, 0 ) };
+	const ImmediateVertex v3 = { glm::vec3( -1.0,  0.5, 0 ), white, glm::vec2( 0, num_checks / aspect ) };
+	const ImmediateVertex v4 = { glm::vec3( -0.5,  0.5, 0 ), white, glm::vec2( num_checks, num_checks / aspect ) };
+
+	immediate_triangle( &imm, v1, v2, v3 );
+	immediate_triangle( &imm, v3, v2, v4 );
+
+	immediate_render( &imm, at_pos, at_colour, true, at_uv, un_tex );
+
+	glBindTexture( GL_TEXTURE_2D, 0 );
+	glDeleteTextures( 1, &tex );
+	glDeleteProgram( texshader );
+	glDisable( GL_BLEND );
 	glEnable( GL_DEPTH_TEST );
 }
