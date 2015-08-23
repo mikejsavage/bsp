@@ -21,9 +21,9 @@
 
 static const GLchar * const vert_src = GLSL(
 	in vec3 position;
-	in vec3 colour;
+	in vec4 colour;
 
-	out vec3 frag_colour;
+	out vec4 frag_colour;
 
 	void main() {
 		gl_Position = vec4( position, 1.0 );
@@ -32,12 +32,12 @@ static const GLchar * const vert_src = GLSL(
 );
 
 static const GLchar * frag_src = GLSL(
-	in vec3 frag_colour;
+	in vec4 frag_colour;
 
 	out vec4 screen_colour;
 
 	void main() {
-		screen_colour = vec4( frag_colour, 1.0 );
+		screen_colour = frag_colour;
 	}
 );
 
@@ -91,29 +91,30 @@ extern "C" GAME_INIT( game_init ) {
 	const float crosshair_thickness = 0.005;
 	const float crosshair_length = 0.02;
 
+	const glm::vec4 red( 1, 0, 0, 1 );
 	immediate_triangle( &state->test_immediate,
 		glm::vec3( -crosshair_length, -crosshair_thickness, 0 ),
 		glm::vec3( -crosshair_length,  crosshair_thickness, 0 ),
 		glm::vec3(  crosshair_length,  crosshair_thickness, 0 ),
-		glm::vec3( 1, 0, 0 )
+		red
 	);
 	immediate_triangle( &state->test_immediate,
 		glm::vec3(  crosshair_length,  crosshair_thickness, 0 ),
 		glm::vec3(  crosshair_length, -crosshair_thickness, 0 ),
 		glm::vec3( -crosshair_length, -crosshair_thickness, 0 ),
-		glm::vec3( 1, 0, 0 )
+		red
 	);
 	immediate_triangle( &state->test_immediate,
 		glm::vec3( -crosshair_thickness / aspect,  crosshair_length * aspect , 0 ),
 		glm::vec3(  crosshair_thickness / aspect,  crosshair_length * aspect , 0 ),
 		glm::vec3(  crosshair_thickness / aspect, -crosshair_length * aspect , 0 ),
-		glm::vec3( 1, 0, 0 )
+		red
 	);
 	immediate_triangle( &state->test_immediate,
 		glm::vec3(  crosshair_thickness / aspect, -crosshair_length * aspect , 0 ),
 		glm::vec3( -crosshair_thickness / aspect, -crosshair_length * aspect , 0 ),
 		glm::vec3( -crosshair_thickness / aspect,  crosshair_length * aspect , 0 ),
-		glm::vec3( 1, 0, 0 )
+		red
 	);
 
 	glClearColor( 0, 0.5, 0.7, 1 );

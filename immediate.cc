@@ -12,7 +12,7 @@ void immediate_init( ImmediateContext * const ctx, ImmediateTriangle * const mem
 
 void immediate_triangle( ImmediateContext * const ctx,
 	const glm::vec3 v1, const glm::vec3 v2, const glm::vec3 v3,
-	const glm::vec3 colour
+	const glm::vec4 colour
 ) {
 	assert( ctx->num_triangles < ctx->max_triangles - 1 );
 
