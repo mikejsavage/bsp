@@ -59,4 +59,28 @@ inline void mike_assert( const bool predicate, const char * const message ) {
 #define STRINGIFY( x ) STRINGIFY_HELPER( x )
 #define assert( predicate ) mike_assert( predicate, "assertion failed at " __FILE__ " line " STRINGIFY( __LINE__ ) ": " #predicate )
 
+// TODO: this sucks
+inline u8 * file_get_contents( const char * const path, size_t * const out_len = nullptr ) {
+	FILE * const file = fopen( path, "rb" );
+	assert( file );
+
+	fseek( file, 0, SEEK_END );
+	size_t len = ftell( file );
+	fseek( file, 0, SEEK_SET );
+
+	// TODO: oh-no-verflow
+	u8 * const contents = ( u8 * const ) malloc( len + 1 );
+	size_t bytes_read = fread( contents, 1, len, file );
+	contents[ len ] = '\0';
+	assert( bytes_read == len );
+
+	if( out_len ) {
+		*out_len = len;
+	}
+
+	fclose( file );
+
+	return contents;
+}
+
 #endif // _INTRINSICS_H_

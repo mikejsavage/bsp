@@ -2,7 +2,7 @@ all: medfall bsp.so hm.so pp
 
 OBJS = main.o gl.o
 BSPOBJS = bsp.o bsp_renderer.o gl.o memory_arena.o
-HMOBJS = hm.o heightmap.o terrain_manager.o work_queue.o stb_image.o stb_perlin.o immediate.o
+HMOBJS = hm.o heightmap.o terrain_manager.o work_queue.o stb_image.o stb_perlin.o immediate.o stb_truetype.o
 PPOBJS = pp.o stb_image.o stb_image_write.o
 
 WARNINGS = -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-write-strings -Wno-char-subscripts
@@ -43,3 +43,6 @@ stb_image_write.o: stb_image_write.cc
 
 stb_perlin.o: stb_perlin.cc
 	$(CXX) $(CXXFLAGS) -c -o $@ $^ -DSTB_PERLIN_IMPLEMENTATION
+
+stb_truetype.o: stb_truetype.cc
+	$(CXX) $(CXXFLAGS) -c -o $@ $^ -DSTB_TRUETYPE_IMPLEMENTATION

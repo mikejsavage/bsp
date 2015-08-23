@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <iostream>
 #include <fstream>
 #include <math.h>
@@ -16,9 +17,9 @@
 #include "work_queue.h"
 #include "stb_image.h"
 #include "stb_perlin.h"
+#include "stb_truetype.h"
 
 #include "platform_opengl.h"
-
 #include "shitty_glsl.h"
 
 static const GLchar * const vert_src = GLSL(
@@ -238,7 +239,45 @@ extern "C" GAME_FRAME( game_frame ) {
 
 	immediate_triangle( &imm, v1, v2, v3 );
 	immediate_triangle( &imm, v3, v2, v4 );
+	immediate_render( &imm, at_pos, at_colour, true, at_uv, un_tex );
 
+	s32 width, height;
+	u8 * const arial = file_get_contents( "Arial.ttf" );
+	stbtt_fontinfo font;
+	int ok = stbtt_InitFont( &font, arial, stbtt_GetFontOffsetForIndex( arial, 0 ) );
+	assert( ok == 1 );
+
+	u8 * const A = stbtt_GetCodepointBitmap( &font,
+		0, stbtt_ScaleForPixelHeight( &font, 256 ),
+		'A', &width, &height, 0, 0 );
+
+	// we able to use a single channel (GL_RED) but I couldn't get it to work
+	u8 * const A4 = ( u8 * const ) malloc( width * height * 4 );
+	for( s32 i = 0; i < width * height; i++ ) {
+		A4[ i * 4 + 0 ] = A[ i ];
+		A4[ i * 4 + 1 ] = A[ i ];
+		A4[ i * 4 + 2 ] = A[ i ];
+		A4[ i * 4 + 3 ] = A[ i ];
+	}
+
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, A4 );
+
+	stbtt_FreeBitmap( A, nullptr );
+	free( A4 );
+	free( arial );
+
+	immediate_clear( &imm );
+
+	const ImmediateVertex v1A = { glm::vec3( -1.0,  1.0, 0 ), white, glm::vec2( 0, 0 ) };
+	const ImmediateVertex v2A = { glm::vec3( -0.5,  1.0, 0 ), white, glm::vec2( 1, 0 ) };
+	const ImmediateVertex v3A = { glm::vec3( -1.0,  0.5, 0 ), white, glm::vec2( 0, 1 ) };
+	const ImmediateVertex v4A = { glm::vec3( -0.5,  0.5, 0 ), white, glm::vec2( 1, 1 ) };
+
+	immediate_triangle( &imm, v1A, v2A, v3A );
+	immediate_triangle( &imm, v3A, v2A, v4A );
 	immediate_render( &imm, at_pos, at_colour, true, at_uv, un_tex );
 
 	glBindTexture( GL_TEXTURE_2D, 0 );
