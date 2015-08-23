@@ -45,7 +45,7 @@ void immediate_render(
 	glBindBuffer( GL_ARRAY_BUFFER, vbos[ 1 ] );
 	glBufferData( GL_ARRAY_BUFFER, ctx->num_triangles * sizeof( ImmediateTriangle ), ctx->triangles, GL_STATIC_DRAW );
 	glEnableVertexAttribArray( at_colour );
-	glVertexAttribPointer( at_colour, 3, GL_FLOAT, GL_FALSE, sizeof( ImmediateVertex ), ( GLvoid * ) sizeof( glm::vec3 ) );
+	glVertexAttribPointer( at_colour, 3, GL_FLOAT, GL_FALSE, sizeof( ImmediateVertex ), ( GLvoid * ) offsetof( ImmediateVertex, colour ) );
 
 	glDrawArrays( GL_TRIANGLES, 0, ctx->num_triangles * 3 );
 
