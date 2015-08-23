@@ -23,7 +23,7 @@ void immediate_init( ImmediateContext * const ctx, ImmediateTriangle * const mem
 void immediate_triangle( ImmediateContext * const ctx,
 	const glm::vec3 v1, const glm::vec3 v2, const glm::vec3 v3, const glm::vec4 colour );
 
-void immediate_render( ImmediateContext * const ctx, const GLuint at_position, const GLuint at_colour );
+void immediate_render( ImmediateContext * const ctx, const GLint at_position, const GLint at_colour );
 void immediate_clear( ImmediateContext * const ctx );
 
 #endif // _IMMEDIATE_H_

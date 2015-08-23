@@ -22,9 +22,9 @@ struct GameState {
 	WorkQueue background_tasks;
 
 	GLuint test_shader;
-	GLuint test_at_position;
-	GLuint test_at_colour;
-	GLuint test_un_VP;
+	GLint test_at_position;
+	GLint test_at_colour;
+	GLint test_un_VP;
 
 	ImmediateContext test_immediate;
 };

@@ -25,7 +25,10 @@ void immediate_triangle( ImmediateContext * const ctx,
 	ctx->triangles[ ctx->num_triangles++ ] = triangle;
 }
 
-void immediate_render( ImmediateContext * const ctx, const GLuint at_position, const GLuint at_colour ) {
+void immediate_render(
+	ImmediateContext * const ctx,
+	const GLint at_position, const GLint at_colour,
+) {
 	GLuint vao;
 	glGenVertexArrays( 1, &vao );
 
