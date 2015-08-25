@@ -132,7 +132,7 @@ void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP *
 
 }
 
-static void bspr_render_leaf( const BSPRenderer * const bspr, const u32 leaf, const GLuint at_position, const GLuint at_colour ) {
+static void bspr_render_leaf( const BSPRenderer * const bspr, const u32 leaf, const GLint at_position, const GLint at_colour ) {
 	glBindVertexArray( bspr->vaos[ leaf ] );
 
 	glBindBuffer( GL_ARRAY_BUFFER, bspr->vbos[ leaf * 2 ] );
@@ -151,7 +151,7 @@ static void bspr_render_leaf( const BSPRenderer * const bspr, const u32 leaf, co
 
 static const glm::mat4 P( glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10000.0f ) );
 
-void bspr_render( const BSPRenderer * const bspr, const glm::vec3 & pos, const GLuint at_position, const GLuint at_colour ) {
+void bspr_render( const BSPRenderer * const bspr, const glm::vec3 & pos, const GLint at_position, const GLint at_colour ) {
 	const s32 cluster = bspr->bsp->position_to_leaf( pos ).cluster;
 
 	if( cluster == -1 ) {
