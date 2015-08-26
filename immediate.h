@@ -33,7 +33,7 @@ void immediate_render( ImmediateContext * const ctx,
 
 void immediate_sphere( ImmediateContext * const ctx,
 	const glm::vec3 centre, const float radius, const glm::vec4 colour,
-	const u32 subdivisions = 32 );
+	const u32 subdivisions = 16 );
 
 void immediate_clear( ImmediateContext * const ctx );
 
