@@ -110,6 +110,7 @@ int main( int argc, char ** argv ) {
 		input.keys[ 'a' ] = glfwGetKey( window, GLFW_KEY_A );
 		input.keys[ 's' ] = glfwGetKey( window, GLFW_KEY_S );
 		input.keys[ 'd' ] = glfwGetKey( window, GLFW_KEY_D );
+		input.keys[ 't' ] = glfwGetKey( window, GLFW_KEY_T );
 		input.keys[ KEY_SPACE ] = glfwGetKey( window, GLFW_KEY_SPACE );
 		input.keys[ KEY_LEFTSHIFT ] = glfwGetKey( window, GLFW_KEY_LEFT_SHIFT );
 		input.keys[ KEY_UPARROW ] = glfwGetKey( window, GLFW_KEY_UP );

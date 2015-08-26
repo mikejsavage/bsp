@@ -14,6 +14,13 @@
 #include "bsp_renderer.h"
 #include "shitty_glsl.h"
 
+static ImmediateTriangle triangles[ 512000 ];
+static ImmediateContext imm;
+
+static bool fix = false;
+static glm::vec3 fix_start;
+static glm::vec3 fix_end;
+
 static const GLchar * const vert_src = GLSL(
 	in vec3 position;
 	in vec3 colour;
@@ -107,106 +114,110 @@ void BSP::load_vis() {
 	printf( "%d: ok. off %u len %u num %u\n", LUMP_VISIBILITY, hl.off, hl.len, vis->num_clusters * vis->cluster_size );
 }
 
-void BSP::trace_seg_brush( const BSP_Brush & brush, BSP_Intersection & bis ) const {
-	float near = -1.0;
-	float far = 1.0;
+// Adapted from RTCD, which means I need this:
+//
+// from Real-Time Collision Detection by Christer Ericson, published by Morgan
+// Kaufmann Publishers, (c) 2005 Elsevier Inc
+void BSP::trace_seg_brush( const BSP_Brush & brush, const glm::vec3 start, const glm::vec3 dir, const float tmin, const float tmax, BSP_Intersection & bis ) const {
+	const glm::vec3 end = start + dir * tmax;
+	float tfar = tmin;
+	bool hit = false;
 
 	for( u32 i = 0; i < brush.num_sides; i++ ) {
 		const BSP_BrushSide & side = brush_sides[ i + brush.init_side ];
 		const BSP_Plane & plane = planes[ side.plane ];
 
-		const float sd = point_plane_distance( bis.start, plane.n, plane.d );
-		const float ed = point_plane_distance( bis.end, plane.n, plane.d );
+		const float start_dist = point_plane_distance( start, plane.n, plane.d );
+		const float end_dist = point_plane_distance( end, plane.n, plane.d );
 
 		// both points infront of plane - we are outside the brush
-		if( sd > 0 && ed > 0 ) {
-			return;
-		}
-
+		if( start_dist > 0 && end_dist > 0 ) return;
 		// both points behind plane - we intersect with another side
-		if( sd <= 0 && ed <= 0 ) {
-			continue;
-		}
+		if( start_dist <= 0 && end_dist <= 0 ) continue;
 
-		const bool entering = sd > ed;
-		const float eps = entering ? -EPSILON : EPSILON;
-		const float t = ( sd + eps ) / ( sd - ed );
+		const float denom = -glm::dot( plane.n, dir );
+		const float t = start_dist / denom;
+		// printf( "%.3f %.3f %.3f\n", t, tmin, tmax );
 
-		if( entering ) {
-			if( t > near ) {
-				near = t;
-				bis.is.plane = &plane;
-				bis.hit = true;
+		if( t >= tmin && t <= tmax ) {
+			glm::vec4 colour = glm::vec4( 0, 0, 1, 1 );
+			// TODO: if we are exiting the brush we want the nearest collision
+			if( t >= tfar ) {
+				tfar = t;
+				hit = true;
+				colour = glm::vec4( 1, 1, 1, 1 );
 			}
-		}
-		else {
-			far = fminf( t, far );
+			immediate_sphere( &imm, start + t * dir, 8, colour, 8 );
 		}
 	}
 
-	// TODO if near < 0, near = 0?
-	if( near < 0 ) printf( "near < 0: %.3f\n", near );
-
-	if( near < far && near > -1.0 && near < bis.is.t ) {
-		if( near >= 0 ) {
-			bis.is.t = near;
-		}
-	}
+	bis.hit = hit;
+	if( hit ) bis.is.t = tfar;
 }
 
-void BSP::trace_seg_leaf( const s32 leaf_idx, BSP_Intersection & bis ) const {
+void BSP::trace_seg_leaf( const u32 leaf_idx, const glm::vec3 start, const glm::vec3 dir, const float tmin, const float tmax, BSP_Intersection & bis ) const {
 	const BSP_Leaf & leaf = leaves[ leaf_idx ];
 
 	for( u32 i = 0; i < leaf.num_brushes; i++ ) {
 		const BSP_Brush & brush = brushes[ leaf_brushes[ i + leaf.init_brush ] ];
 		const BSP_Texture & texture = textures[ brush.texture ];
 
+		// TODO: magic number
 		if( texture.content_flags & 1 ) {
-			trace_seg_brush( brush, bis );
+			trace_seg_brush( brush, start, dir, tmin, tmax, bis );
+			if( bis.hit ) return; // TODO:
 		}
 	}
 }
 
-void BSP::trace_seg_tree( const s32 node_idx, const glm::vec3 & start, const glm::vec3 & end, const float t1, const float t2, BSP_Intersection & bis ) const {
+void BSP::trace_seg_tree( const s32 node_idx, const glm::vec3 start, const glm::vec3 dir, const float tmin, const float tmax, BSP_Intersection & bis ) const {
+	if( bis.hit ) return;
+	// printf( "TST: %.3f %.3f\n", tmin, tmax );
 	if( node_idx < 0 ) {
-		trace_seg_leaf( -( node_idx + 1 ), bis );
+		trace_seg_leaf( -( node_idx + 1 ), start, dir, tmin, tmax, bis );
 		return;
 	}
 
 	const BSP_Node & node = nodes[ node_idx ];
 	const BSP_Plane & plane = planes[ node.plane ];
 
-	const float sd = point_plane_distance( start, plane.n, plane.d );
-	const float ed = point_plane_distance( end, plane.n, plane.d );
+	// ( start + dir * t ) . plane.n = plane.d
+	// start . plane.n + t * dir . plane.n = plane.d
+	// t * dir . plane.n = plane.d - start . plane.n
+	// t * denom = dist
+	const float denom = glm::dot( plane.n, dir );
+	const float dist = -point_plane_distance( start, plane.n, plane.d );
+	bool near_child = dist > 0.0f;
+	bool check_both_sides = false;
+	float t = tmax;
 
-	if( same_sign( sd, ed ) ) {
-		trace_seg_tree( sd >= 0 ? node.pos_child : node.neg_child, start, end, t1, t2, bis );
-		return;
+	if( denom != 0.0f ) {
+		const float unchecked_t = dist / denom;
+
+		// if t > tmax, we hit the plane beyond the area we want to
+		// check so we only need to look at stuff on the near side
+		// if t < 0, we didn't even hit the plane
+		if( unchecked_t >= 0 && unchecked_t <= tmax ) {
+			// we hit the plane before our threshold, so the area
+			// we want to check is entirely on the other side
+			if( unchecked_t < tmin ) {
+				near_child = !near_child;
+			}
+			else {
+				// otherwise we straddle the plane
+				check_both_sides = true;
+				t = unchecked_t;
+				immediate_sphere( &imm, start + t * dir, 8, glm::vec4( 0, 1, 0, 1 ), 8 );
+			}
+		}
 	}
 
-	const bool pos_to_neg = sd > ed;
-	const float id = 1 / ( sd - ed );
-	const float f1 = ( sd + EPSILON ) * id;
-	float f2;
+	// TODO: if we hit on the near side we should early out
+	trace_seg_tree( node.children[ near_child ], start, dir, tmin, t, bis );
 
-	if( pos_to_neg ) {
-		f2 = ( sd - EPSILON ) * id;
+	if( check_both_sides ) {
+		trace_seg_tree( node.children[ !near_child ], start, dir, t, tmax, bis );
 	}
-	else {
-		f2 = ( sd + EPSILON ) * id;
-	}
-
-	// clamp f1/f2?
-	if( f1 < 0 || f1 > 1 || f2 < 0 || f2 > 1 ) printf( "%.2f %.2f\n", f1, f2 );
-
-	const float m1 = t1 + f1 * ( t2 - t1 );
-	const float m2 = t1 + f2 * ( t2 - t1 );
-
-	const glm::vec3 mid1 = start + f1 * ( end - start );
-	const glm::vec3 mid2 = start + f2 * ( end - start );
-
-	trace_seg_tree( pos_to_neg ? node.pos_child : node.neg_child, start, mid1, t1, m1, bis );
-	trace_seg_tree( pos_to_neg ? node.neg_child : node.pos_child, mid2, end, m2, t2, bis );
 }
 
 bool BSP::trace_seg( const glm::vec3 & start, const glm::vec3 & end, Intersection & is ) const {
@@ -215,7 +226,9 @@ bool BSP::trace_seg( const glm::vec3 & start, const glm::vec3 & end, Intersectio
 	bis.start = start;
 	bis.end = end;
 
-	trace_seg_tree( 0, start, end, 0, 1, bis );
+	const glm::vec3 dir = end - start;
+
+	trace_seg_tree( 0, start, dir, 0.0f, 1.0f, bis );
 
 	if( bis.hit ) {
 		bis.is.pos = start + bis.is.t * ( end - start );
@@ -270,6 +283,8 @@ extern "C" GAME_INIT( game_init ) {
 	state->test_at_position = glGetAttribLocation( state->test_shader, "position" );
 	state->test_at_colour = glGetAttribLocation( state->test_shader, "colour" );
 	state->test_un_VP = glGetUniformLocation( state->test_shader, "VP" );
+
+	immediate_init( &imm, triangles, array_count( triangles ) );
 }
 
 extern "C" GAME_FRAME( game_frame ) {
@@ -287,11 +302,11 @@ extern "C" GAME_FRAME( game_frame ) {
 	state->angles.x += pitch * dt * 2;
 	state->angles.y += yaw * dt * 2;
 
-	state->pos += angles_to_vector( state->angles ) * 100.0f * dt * ( float ) fb;
+	const glm::vec3 forward = angles_to_vector( state->angles );
+	state->pos += forward * 100.0f * dt * ( float ) fb;
 	const glm::vec3 sideways = glm::vec3( -cosf( state->angles.y ), sinf( state->angles.y ), 0 );
 	state->pos += sideways * 100.0f * dt * ( float ) lr;
 	state->pos.z += ( float ) dz * 100.0f * dt;
-
 	const glm::mat4 VP = glm::translate(
 		glm::rotate(
 			glm::rotate(
@@ -309,4 +324,24 @@ extern "C" GAME_FRAME( game_frame ) {
 	glUniformMatrix4fv( state->test_un_VP, 1, GL_FALSE, glm::value_ptr( VP ) );
 
 	bspr_render( &state->bspr, state->pos, state->test_at_position, state->test_at_colour );
+
+	immediate_clear( &imm );
+	immediate_sphere( &imm, glm::vec3( 0, 0, 0 ), 128, glm::vec4( 1, 1, 0, 1 ) );
+
+	if( input->keys[ 't' ] ) {
+		fix = true;
+		fix_start = state->pos;
+		fix_end = fix_start + forward * 1000.0f;
+	}
+
+	if( fix ) {
+		Intersection is;
+		bool hit = state->bspr.bsp->trace_seg( fix_start, fix_end, is );
+
+		if( hit ) {
+			immediate_sphere( &imm, is.pos, 16, glm::vec4( 1, 0, 0, 1 ) );
+		}
+	}
+
+	immediate_render( &imm, state->test_at_position, state->test_at_colour );
 }
