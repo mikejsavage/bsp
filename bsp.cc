@@ -45,7 +45,7 @@ bool same_sign( const float a, const float b ) {
 	return a * b >= 0;
 }
 
-float point_plane_distance( const glm::vec3 & point, const glm::vec3 & normal, float d ) {
+float point_plane_distance( const glm::vec3 point, const glm::vec3 normal, const float d ) {
 	return glm::dot( point, normal ) - d;
 }
 
