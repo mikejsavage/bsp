@@ -234,7 +234,7 @@ BSP_Leaf & BSP::position_to_leaf( const glm::vec3 & pos ) const {
 
 		const float dist = point_plane_distance( pos, plane.n, plane.d );
 
-		node_idx = dist >= 0 ? node.pos_child : node.neg_child;
+		node_idx = node.children[ dist < 0 ];
 	} while( node_idx >= 0 );
 
 	return leaves[ -( node_idx + 1 ) ];

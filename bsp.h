@@ -52,8 +52,13 @@ struct BSP_Plane {
 struct BSP_Node {
 	u32 plane;
 
-	s32 pos_child;
-	s32 neg_child;
+	union {
+		s32 children[ 2 ];
+		struct {
+			s32 pos_child;
+			s32 neg_child;
+		};
+	};
 
 	s32 mins[ 3 ];
 	s32 maxs[ 3 ];
