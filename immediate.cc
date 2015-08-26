@@ -38,6 +38,51 @@ void immediate_triangle(
 	ctx->triangles[ ctx->num_triangles++ ] = triangle;
 }
 
+void immediate_sphere(
+	ImmediateContext * const ctx, const glm::vec3 centre, const float radius,
+	const glm::vec4 colour, const u32 subdivisions
+) {
+	const float azimuth_max = 2.0f * M_PI;
+	const float pitch_max = M_PI;
+
+	for( u32 a = 0; a < subdivisions * 2; a++ ) {
+		const float azimuth0 = azimuth_max * ( float ) a / ( subdivisions * 2 );
+		const float azimuth1 = azimuth_max * ( float ) ( a + 1 ) / ( subdivisions * 2 );
+
+		for( u32 p = 0; p < subdivisions; p++ ) {
+			const float pitch0 = pitch_max * ( float ) p / subdivisions;
+			const float pitch1 = pitch_max * ( float ) ( p + 1 ) / subdivisions;
+
+			const glm::vec3 top_left = centre + glm::vec3(
+				radius * cosf( azimuth0 ) * sinf( pitch0 ),
+				radius * sinf( azimuth0 ) * sinf( pitch0 ),
+				radius * cosf( pitch0 )
+			);
+
+			const glm::vec3 top_right = centre + glm::vec3(
+				radius * cosf( azimuth1 ) * sinf( pitch0 ),
+				radius * sinf( azimuth1 ) * sinf( pitch0 ),
+				radius * cosf( pitch0 )
+			);
+
+			const glm::vec3 bottom_left = centre + glm::vec3(
+				radius * cosf( azimuth0 ) * sinf( pitch1 ),
+				radius * sinf( azimuth0 ) * sinf( pitch1 ),
+				radius * cosf( pitch1 )
+			);
+
+			const glm::vec3 bottom_right = centre + glm::vec3(
+				radius * cosf( azimuth1 ) * sinf( pitch1 ),
+				radius * sinf( azimuth1 ) * sinf( pitch1 ),
+				radius * cosf( pitch1 )
+			);
+
+			immediate_triangle( ctx, top_left, top_right, bottom_left, colour );
+			immediate_triangle( ctx, bottom_left, top_right, bottom_right, colour );
+		}
+	}
+}
+
 void immediate_render(
 	ImmediateContext * const ctx,
 	const GLint at_position, const GLint at_colour,

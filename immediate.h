@@ -31,6 +31,10 @@ void immediate_render( ImmediateContext * const ctx,
 	const GLint at_position, const GLint at_colour,
 	const bool textured = false, const GLint at_uv = 0, const GLint un_texture = 0 );
 
+void immediate_sphere( ImmediateContext * const ctx,
+	const glm::vec3 centre, const float radius, const glm::vec4 colour,
+	const u32 subdivisions = 32 );
+
 void immediate_clear( ImmediateContext * const ctx );
 
 #endif // _IMMEDIATE_H_
