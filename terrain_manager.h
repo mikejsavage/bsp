@@ -7,37 +7,23 @@
 #include "intrinsics.h"
 #include "heightmap.h"
 
-class TerrainManager {
-private:
-	static const int TILE_SIZE = 128;
-	static const int REGION_SIZE = 5;
-	static const int REGION_HALF = REGION_SIZE / 2;
+static const u32 TILE_SIZE = 128;
+static const u32 MAX_TILES_DIM = 256;
 
-	std::string dir;
+static const u32 VIEW_SIZE = 5;
+static const u32 VIEW_HALF = VIEW_SIZE / 2;
 
-	int w, h;
-
-	Heightmap tiles[ REGION_SIZE ][ REGION_SIZE ];
-	Heightmap alt_tiles[ REGION_SIZE ][ REGION_SIZE ];
-
-	u8 lods[ REGION_SIZE ][ REGION_SIZE ];
-
-	int cx, cy;
-	int ptx, pty;
-
-public:
-	TerrainManager( const std::string & dir );
-	void use( const std::string & dir );
-
-	std::string tp( const int tx, const int ty ) const;
-	void update( const glm::vec3 & position );
-
-	// maybe these aren't needed
-	void prepare_teleport( const glm::vec3 & position );
-	bool teleport_ready();
-	void teleport( const glm::vec3 & position );
-
-	void render( const glm::mat4 & VP );
+struct TerrainManager {
+	char dir[ 128 ];
+	u32 width, height;
+	u32 last_tx, last_ty;
+	bool first_teleport;
+	Heightmap tiles[ MAX_TILES_DIM ][ MAX_TILES_DIM ];
 };
+
+void terrain_init( TerrainManager * const tm, const char * const tiles_dir );
+void terrain_teleport( TerrainManager * const tm, const glm::vec3 position );
+void terrain_update( TerrainManager * const tm, const glm::vec3 position );
+void terrain_render( const TerrainManager * const tm, const glm::mat4 VP );
 
 #endif // _TERRAIN_MANAGER_H_

@@ -8,7 +8,7 @@
  *   - wx/wy are used to denote global coordinates
  */
 
-#include <string>
+#include <string.h>
 
 #include <glm/glm.hpp>
 
@@ -16,163 +16,129 @@
 #include "heightmap.h"
 #include "terrain_manager.h"
 
-int iabs( const int x ) {
-	return x < 0 ? -x : x;
+// TODO: lol
+static char tp_path[ 256 ];
+static char * tp( const TerrainManager * const tm, const u32 tx, const u32 ty ) {
+	sprintf( tp_path, "%s/%d_%d.tga", tm->dir, tx, ty );
+	return tp_path;
 }
 
-TerrainManager::TerrainManager( const std::string & dir ) {
-	use( dir );
-}
+void terrain_init( TerrainManager * const tm, const char * const tiles_dir ) {
+	assert( strlen( tiles_dir ) < array_count( tm->dir ) );
+	strcpy( tm->dir, tiles_dir );
 
-void TerrainManager::use( const std::string & dir ) {
-	this->dir = dir;
+	char dims_path[ 256 ];
+	sprintf( dims_path, "%s/dims.txt", tm->dir );
 
-	FILE * dims = fopen( ( dir + "/dims.txt" ).c_str(), "r" );
-	fscanf( dims, "%d %d", &w, &h );
+	FILE * dims = fopen( dims_path, "r" );
+	fscanf( dims, "%d %d", &tm->width, &tm->height );
 	fclose( dims );
-	printf( "%d %d\n", w, h );
+	printf( "%d %d\n", tm->width, tm->height );
 
-	for( int ty = 0; ty < REGION_SIZE; ty++ ) {
-		for( int tx = 0; tx < REGION_SIZE; tx++ ) {
-			const int rx = tx - REGION_HALF;
-			const int ry = ty - REGION_HALF;
-
-			if( rx == ry || rx == -ry ) {
-				lods[ tx ][ ty ] = std::max( 1, iabs( rx ) + iabs( ry ) - 1 );
-			}
-			else {
-				lods[ tx ][ ty ] = std::max( iabs( rx ), iabs( ry ) );
-			}
-
-			tiles[ tx ][ ty ].init();
+	for( u32 ty = 0; ty < tm->height / TILE_SIZE; ty++ ) {
+		printf( "init %u\n", ty );
+		for( u32 tx = 0; tx < tm->width / TILE_SIZE; tx++ ) {
+			tm->tiles[ tx ][ ty ].init();
 		}
 	}
 
-	for( int ty = 0; ty < REGION_SIZE; ty++ ) {
-		for( int tx = 0; tx < REGION_SIZE; tx++ ) {
-			printf( "%d ", lods[ tx ][ ty ] );
+	tm->first_teleport = true;
+}
+
+void terrain_teleport( TerrainManager * const tm, const glm::vec3 position ) {
+	const u32 new_tx = position.x / TILE_SIZE;
+	const u32 new_ty = position.y / TILE_SIZE;
+
+	// TODO: this is a cheap hack
+	if( !tm->first_teleport ) {
+		for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
+			for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
+				tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty + ty - VIEW_HALF ].unload();
+			}
 		}
-		printf( "\n" );
+	}
+
+	tm->first_teleport = false;
+
+	tm->last_tx = new_tx;
+	tm->last_ty = new_ty;
+
+	for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
+		for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
+			tm->tiles[ new_tx + tx - VIEW_HALF ][ new_ty + ty - VIEW_HALF ].load(
+				tp( tm, new_tx + tx - VIEW_HALF, new_ty + ty - VIEW_HALF ),
+				( new_tx + tx - VIEW_HALF ) * TILE_SIZE,
+				( new_ty + ty - VIEW_HALF ) * TILE_SIZE
+			);
+		}
 	}
 }
 
-std::string TerrainManager::tp( const int tx, const int ty ) const {
-	return dir + "/" + std::to_string( tx ) + "_" + std::to_string( ty ) + ".tga";
-}
+void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
+	const u32 new_tx = position.x / TILE_SIZE;
+	const u32 new_ty = position.y / TILE_SIZE;
 
-void TerrainManager::update( const glm::vec3 & position ) {
-	const int new_ptx = position.x / TILE_SIZE;
-	const int new_pty = position.y / TILE_SIZE;
-
-	if( new_ptx != ptx ) {
-		if( new_ptx > ptx ) {
+	if( new_tx != tm->last_tx ) {
+		if( new_tx > tm->last_tx ) {
 			printf( "boundary +x\n" );
-			for( int ty = 0; ty < REGION_SIZE; ty++ ) {
-				tiles[ 0 ][ ty ].unload();
+			for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
+				tm->tiles[ tm->last_tx - VIEW_HALF ][ ty ].unload();
 
-				for( int tx = 1; tx < REGION_SIZE; tx++ ) {
-					tiles[ tx - 1 ][ ty ] = std::move( tiles[ tx ][ ty ] );
-				}
-
-				tiles[ REGION_SIZE - 1 ][ ty ].load(
-					tp( ptx + REGION_HALF + 1, pty + ty - REGION_HALF ),
-					( ptx + REGION_HALF + 1 ) * TILE_SIZE,
-					( pty + ty - REGION_HALF ) * TILE_SIZE );
+				tm->tiles[ tm->last_tx + VIEW_HALF + 1 ][ ty ].load(
+					tp( tm, tm->last_tx + VIEW_HALF + 1, tm->last_ty + ty - VIEW_HALF ),
+					( tm->last_tx + VIEW_HALF + 1 ) * TILE_SIZE,
+					( tm->last_ty + ty - VIEW_HALF ) * TILE_SIZE );
 			}
 
-			ptx++;
+			tm->last_tx++;
 		}
 		else {
 			printf( "boundary -x\n" );
-			for( int ty = 0; ty < REGION_SIZE; ty++ ) {
-				tiles[ REGION_SIZE - 1 ][ ty ].unload();
+			for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
+				tm->tiles[ tm->last_tx + VIEW_HALF ][ ty ].unload();
 
-				for( int tx = REGION_SIZE - 2; tx >= 0; tx-- ) {
-					tiles[ tx + 1 ][ ty ] = std::move( tiles[ tx ][ ty ] );
-				}
-
-				tiles[ 0 ][ ty ].load(
-					tp( ptx - REGION_HALF - 1, pty + ty - REGION_HALF ),
-					( ptx - REGION_HALF - 1 ) * TILE_SIZE,
-					( pty + ty - REGION_HALF ) * TILE_SIZE );
+				tm->tiles[ tm->last_tx - VIEW_HALF - 1 ][ ty ].load(
+					tp( tm, tm->last_tx - VIEW_HALF - 1, tm->last_ty + ty - VIEW_HALF ),
+					( tm->last_tx - VIEW_HALF - 1 ) * TILE_SIZE,
+					( tm->last_ty + ty - VIEW_HALF ) * TILE_SIZE );
 			}
 
-			ptx--;
+			tm->last_tx--;
 		}
 	}
 
-	if( new_pty != pty ) {
-		if( new_pty > pty ) {
+	if( new_ty != tm->last_ty ) {
+		if( new_ty > tm->last_ty ) {
 			printf( "boundary +y\n" );
-			for( int tx = 0; tx < REGION_SIZE; tx++ ) {
-				tiles[ tx ][ 0 ].unload();
+			for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
+				tm->tiles[ tx ][ tm->last_ty - VIEW_HALF ].unload();
 
-				for( int ty = 1; ty < REGION_SIZE; ty++ ) {
-					tiles[ tx ][ ty - 1 ] = std::move( tiles[ tx ][ ty ] );
-				}
-
-				tiles[ tx ][ REGION_SIZE - 1 ].load(
-					tp( ptx + tx - REGION_HALF, pty + REGION_HALF + 1 ),
-					( ptx + tx - REGION_HALF ) * TILE_SIZE,
-					( pty + REGION_HALF + 1 ) * TILE_SIZE );
+				tm->tiles[ tx ][ tm->last_ty + VIEW_HALF + 1 ].load(
+					tp( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty + VIEW_HALF + 1 ),
+					( tm->last_tx + tx - VIEW_HALF ) * TILE_SIZE,
+					( tm->last_ty + VIEW_HALF + 1 ) * TILE_SIZE );
 			}
-			pty++;
+			tm->last_ty++;
 		}
 		else {
 			printf( "boundary -y\n" );
-			for( int tx = 0; tx < REGION_SIZE; tx++ ) {
-				tiles[ tx ][ REGION_SIZE - 1 ].unload();
+			for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
+				tm->tiles[ tx ][ tm->last_ty + VIEW_HALF ].unload();
 
-				for( int ty = REGION_SIZE - 2; ty >= 0; ty-- ) {
-					tiles[ tx ][ ty + 1 ] = std::move( tiles[ tx ][ ty ] );
-				}
-
-				tiles[ tx ][ 0 ].load(
-					tp( ptx + tx - REGION_HALF, pty - REGION_HALF - 1 ),
-					( ptx + tx - REGION_HALF ) * TILE_SIZE,
-					( pty - REGION_HALF - 1 ) * TILE_SIZE );
+				tm->tiles[ tx ][ tm->last_ty - VIEW_HALF - 1 ].load(
+					tp( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty - VIEW_HALF - 1 ),
+					( tm->last_tx + tx - VIEW_HALF ) * TILE_SIZE,
+					( tm->last_ty - VIEW_HALF - 1 ) * TILE_SIZE );
 			}
-			pty--;
+			tm->last_ty--;
 		}
 	}
 }
 
-void TerrainManager::prepare_teleport( const glm::vec3 & position ) {
-}
-
-bool TerrainManager::teleport_ready() {
-	return false;
-}
-
-void TerrainManager::teleport( const glm::vec3 & position ) {
-	cx = cy = REGION_HALF;
-	ptx = position.x / TILE_SIZE;
-	pty = position.y / TILE_SIZE;
-
-	for( int ty = 0; ty < REGION_SIZE; ty++ ) {
-		for( int tx = 0; tx < REGION_SIZE; tx++ ) {
-			const int ltx = ptx + tx - REGION_HALF;
-			const int lty = pty + ty - REGION_HALF;
-
-			if( ltx >= 0 && ltx < w && lty >= 0 && lty < h ) {
-				tiles[ tx ][ ty ].load(
-					dir + "/" + std::to_string( ltx ) + "_" + std::to_string( lty ) + ".tga",
-					ltx * TILE_SIZE,
-					lty * TILE_SIZE
-				);
-			}
-			else {
-				tiles[ tx ][ ty ].unload();
-			}
-		}
-	}
-
-}
-
-void TerrainManager::render( const glm::mat4 & VP ) {
-	for( int ty = 0; ty < REGION_SIZE; ty++ ) {
-		for( int tx = 0; tx < REGION_SIZE; tx++ ) {
-			tiles[ tx ][ ty ].render( VP );
+void terrain_render( const TerrainManager * const tm, const glm::mat4 VP ) {
+	for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
+		for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
+			tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty + ty - VIEW_HALF ].render( VP );
 		}
 	}
 }
