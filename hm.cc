@@ -254,7 +254,7 @@ extern "C" GAME_FRAME( game_frame ) {
 		-state->pos
 	);
 
-	terrain_render( &state->tm, VP );
+	terrain_render( &state->tm, VP, 0.3f );
 
 	glDisable( GL_DEPTH_TEST );
 	glUseProgram( state->test_shader );

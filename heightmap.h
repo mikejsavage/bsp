@@ -19,21 +19,11 @@ private:
 	GLuint ebo;
 	GLuint vao;
 
-	GLuint shader;
-
-	GLint at_pos;
-	GLint at_normal;
-	GLint at_lit;
-
-	GLint un_vp;
-	GLint un_sun;
-
 public:
 	~Heightmap();
 
-	void init();
-
-	void load( const std::string & image, const int ox, const int oy );
+	void load( const std::string & image, const int ox, const int oy,
+		const GLint at_pos, const GLint at_normal, const GLint at_lit );
 	void unload();
 
 	glm::vec3 point( int x, int y ) const;
@@ -41,7 +31,7 @@ public:
 
 	float height( const float x, const float y ) const;
 
-	void render( const glm::mat4 & VP ) const;
+	void render() const;
 };
 
 #endif // _HEIGHTMAP_H_

@@ -5,69 +5,19 @@
 
 #include "platform_opengl.h"
 #include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 #include "intrinsics.h"
 #include "heightmap.h"
 #include "stb_image.h"
 #include "stb_perlin.h"
-#include "shitty_glsl.h"
 
 const float SLOPE = 0.3;
 
-static const GLchar * const vert_src = GLSL(
-	in vec3 position;
-	in vec3 normal;
-	in float lit;
-
-	out vec3 n;
-	out float depth;
-	out float l;
-
-	uniform mat4 vp;
-
-	void main() {
-		n = normal;
-		l = lit;
-		gl_Position = vp * vec4( position, 1.0 );
-		depth = gl_Position.z;
-	}
-);
-
-static const GLchar * frag_src = GLSL(
-	in vec3 n;
-	in float depth;
-	in float l;
-
-	out vec4 colour;
-
-	uniform vec3 sun;
-
-	void main() {
-		vec3 ground;
-		if( n.z > 0.9 ) {
-			ground = vec3( 0.4, 1.0, 0.4 );
-		}
-		else {
-			ground = vec3( 0.7, 0.7, 0.5 );
-		}
-
-		float d = max( 0, -dot( n, sun ) );
-		float light = max( 0.2, l * d );
-
-		vec3 fog = vec3( 0.6, 0.6, 0.6 );
-
-		float t = smoothstep( 400, 600, depth );
-
-		colour = vec4( ( 1.0 - t ) * ground * light + t * fog, 1.0 );
-	}
-);
-
-float lerp( const float a, const float b, const float t ) {
+static float lerp( const float a, const float b, const float t ) {
 	return a * ( 1 - t ) + b * t;
 }
 
-float bilinear_interpolation(
+static float bilinear_interpolation(
 	const glm::vec3 & v1,
 	const glm::vec3 & v2,
 	const glm::vec3 & v3,
@@ -85,31 +35,20 @@ float bilinear_interpolation(
 }
 
 // CCW winding points towards the camera
-glm::vec3 triangle_normal_ccw( const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c ) {
+static glm::vec3 triangle_normal_ccw( const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c ) {
 	return glm::normalize( glm::cross( b - a, c - a ) );
 }
 
-glm::vec3 triangle_perp_ccw( const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c ) {
+static glm::vec3 triangle_perp_ccw( const glm::vec3 & a, const glm::vec3 & b, const glm::vec3 & c ) {
 	return glm::cross( b - a, c - a );
 }
 
 Heightmap::~Heightmap() {
 	unload();
-	glDeleteProgram( shader );
 }
 
-void Heightmap::init() {
-	shader = compile_shader( vert_src, frag_src, "colour" );
-
-	at_pos = glGetAttribLocation( shader, "position" );
-	at_normal = glGetAttribLocation( shader, "normal" );
-	at_lit = glGetAttribLocation( shader, "lit" );
-
-	un_vp = glGetUniformLocation( shader, "vp" );
-	un_sun = glGetUniformLocation( shader, "sun" );
-}
-
-void Heightmap::load( const std::string & image, const int ox, const int oy ) {
+void Heightmap::load( const std::string & image, const int ox, const int oy,
+	const GLint at_pos, const GLint at_normal, const GLint at_lit ) {
 	pixels = stbi_load( image.c_str(), &w, &h, nullptr, 1 );
 
 	if( !pixels ) {
@@ -199,18 +138,26 @@ void Heightmap::load( const std::string & image, const int ox, const int oy ) {
 	glGenBuffers( 1, &vbo_verts );
 	glBindBuffer( GL_ARRAY_BUFFER, vbo_verts );
 	glBufferData( GL_ARRAY_BUFFER, w * h * sizeof( GLfloat ) * 3, vertices, GL_STATIC_DRAW );
+	glEnableVertexAttribArray( at_pos );
+	glVertexAttribPointer( at_pos, 3, GL_FLOAT, GL_FALSE, 0, 0 );
 
 	glGenBuffers( 1, &vbo_normals );
 	glBindBuffer( GL_ARRAY_BUFFER, vbo_normals );
 	glBufferData( GL_ARRAY_BUFFER, w * h * sizeof( GLfloat ) * 3, normals, GL_STATIC_DRAW );
+	glEnableVertexAttribArray( at_normal );
+	glVertexAttribPointer( at_normal, 3, GL_FLOAT, GL_FALSE, 0, 0 );
 
 	glGenBuffers( 1, &vbo_lit );
 	glBindBuffer( GL_ARRAY_BUFFER, vbo_lit );
 	glBufferData( GL_ARRAY_BUFFER, w * h * sizeof( GLfloat ), lit, GL_STATIC_DRAW );
+	glEnableVertexAttribArray( at_lit );
+	glVertexAttribPointer( at_lit, 1, GL_FLOAT, GL_FALSE, 0, 0 );
 
 	glGenBuffers( 1, &ebo );
 	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, ebo );
 	glBufferData( GL_ELEMENT_ARRAY_BUFFER, w * h * sizeof( GLuint ) * 6, indices, GL_STATIC_DRAW );
+
+	glBindVertexArray( 0 );
 
 	delete vertices;
 	delete normals;
@@ -317,31 +264,10 @@ float Heightmap::height( const float x, const float y ) const {
 	);
 }
 
-void Heightmap::render( const glm::mat4 & VP ) const {
-	if( vbo_verts == 0 ) {
-		return;
-	}
+void Heightmap::render() const {
+	assert( vbo_verts != 0 );
 
-	const glm::vec3 sun = glm::normalize( glm::vec3( 1, 0, -SLOPE ) );
-
-	glUseProgram( shader );
 	glBindVertexArray( vao );
-
-	glUniformMatrix4fv( un_vp, 1, GL_FALSE, glm::value_ptr( VP ) );
-	glUniform3fv( un_sun, 1, glm::value_ptr( sun ) );
-
-	glBindBuffer( GL_ARRAY_BUFFER, vbo_verts );
-	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, ebo );
-	glEnableVertexAttribArray( at_pos );
-	glVertexAttribPointer( at_pos, 3, GL_FLOAT, GL_FALSE, 0, 0 );
-
-	glBindBuffer( GL_ARRAY_BUFFER, vbo_normals );
-	glEnableVertexAttribArray( at_normal );
-	glVertexAttribPointer( at_normal, 3, GL_FLOAT, GL_FALSE, 0, 0 );
-
-	glBindBuffer( GL_ARRAY_BUFFER, vbo_lit );
-	glEnableVertexAttribArray( at_lit );
-	glVertexAttribPointer( at_lit, 1, GL_FLOAT, GL_FALSE, 0, 0 );
-
 	glDrawElements( GL_TRIANGLES, w * h * 6, GL_UNSIGNED_INT, 0 );
+	glBindVertexArray( 0 );
 }

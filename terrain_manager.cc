@@ -11,10 +11,60 @@
 #include <string.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "intrinsics.h"
 #include "heightmap.h"
 #include "terrain_manager.h"
+#include "shitty_glsl.h"
+
+static const GLchar * const vert_src = GLSL(
+	in vec3 position;
+	in vec3 normal;
+	in float lit;
+
+	out vec3 n;
+	out float depth;
+	out float l;
+
+	uniform mat4 vp;
+
+	void main() {
+		n = normal;
+		l = lit;
+		gl_Position = vp * vec4( position, 1.0 );
+		depth = gl_Position.z;
+	}
+);
+
+static const GLchar * frag_src = GLSL(
+	in vec3 n;
+	in float depth;
+	in float l;
+
+	out vec4 colour;
+
+	uniform vec3 sun;
+
+	void main() {
+		vec3 ground;
+		if( n.z > 0.9 ) {
+			ground = vec3( 0.4, 1.0, 0.4 );
+		}
+		else {
+			ground = vec3( 0.7, 0.7, 0.5 );
+		}
+
+		float d = max( 0, -dot( n, sun ) );
+		float light = max( 0.2, l * d );
+
+		vec3 fog = vec3( 0.6, 0.6, 0.6 );
+
+		float t = smoothstep( 400, 600, depth );
+
+		colour = vec4( ( 1.0 - t ) * ground * light + t * fog, 1.0 );
+	}
+);
 
 // TODO: lol
 static char tp_path[ 256 ];
@@ -35,12 +85,14 @@ void terrain_init( TerrainManager * const tm, const char * const tiles_dir ) {
 	fclose( dims );
 	printf( "%d %d\n", tm->width, tm->height );
 
-	for( u32 ty = 0; ty < tm->height / TILE_SIZE; ty++ ) {
-		printf( "init %u\n", ty );
-		for( u32 tx = 0; tx < tm->width / TILE_SIZE; tx++ ) {
-			tm->tiles[ tx ][ ty ].init();
-		}
-	}
+	tm->shader = compile_shader( vert_src, frag_src, "colour" );
+
+	tm->at_pos = glGetAttribLocation( tm->shader, "position" );
+	tm->at_normal = glGetAttribLocation( tm->shader, "normal" );
+	tm->at_lit = glGetAttribLocation( tm->shader, "lit" );
+
+	tm->un_vp = glGetUniformLocation( tm->shader, "vp" );
+	tm->un_sun = glGetUniformLocation( tm->shader, "sun" );
 
 	tm->first_teleport = true;
 }
@@ -68,7 +120,8 @@ void terrain_teleport( TerrainManager * const tm, const glm::vec3 position ) {
 			tm->tiles[ new_tx + tx - VIEW_HALF ][ new_ty + ty - VIEW_HALF ].load(
 				tp( tm, new_tx + tx - VIEW_HALF, new_ty + ty - VIEW_HALF ),
 				( new_tx + tx - VIEW_HALF ) * TILE_SIZE,
-				( new_ty + ty - VIEW_HALF ) * TILE_SIZE
+				( new_ty + ty - VIEW_HALF ) * TILE_SIZE,
+				tm->at_pos, tm->at_normal, tm->at_lit
 			);
 		}
 	}
@@ -87,7 +140,8 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 				tm->tiles[ tm->last_tx + VIEW_HALF + 1 ][ ty ].load(
 					tp( tm, tm->last_tx + VIEW_HALF + 1, tm->last_ty + ty - VIEW_HALF ),
 					( tm->last_tx + VIEW_HALF + 1 ) * TILE_SIZE,
-					( tm->last_ty + ty - VIEW_HALF ) * TILE_SIZE );
+					( tm->last_ty + ty - VIEW_HALF ) * TILE_SIZE,
+					tm->at_pos, tm->at_normal, tm->at_lit );
 			}
 
 			tm->last_tx++;
@@ -100,7 +154,8 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 				tm->tiles[ tm->last_tx - VIEW_HALF - 1 ][ ty ].load(
 					tp( tm, tm->last_tx - VIEW_HALF - 1, tm->last_ty + ty - VIEW_HALF ),
 					( tm->last_tx - VIEW_HALF - 1 ) * TILE_SIZE,
-					( tm->last_ty + ty - VIEW_HALF ) * TILE_SIZE );
+					( tm->last_ty + ty - VIEW_HALF ) * TILE_SIZE,
+					tm->at_pos, tm->at_normal, tm->at_lit );
 			}
 
 			tm->last_tx--;
@@ -116,7 +171,8 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 				tm->tiles[ tx ][ tm->last_ty + VIEW_HALF + 1 ].load(
 					tp( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty + VIEW_HALF + 1 ),
 					( tm->last_tx + tx - VIEW_HALF ) * TILE_SIZE,
-					( tm->last_ty + VIEW_HALF + 1 ) * TILE_SIZE );
+					( tm->last_ty + VIEW_HALF + 1 ) * TILE_SIZE,
+					tm->at_pos, tm->at_normal, tm->at_lit );
 			}
 			tm->last_ty++;
 		}
@@ -128,17 +184,27 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 				tm->tiles[ tx ][ tm->last_ty - VIEW_HALF - 1 ].load(
 					tp( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty - VIEW_HALF - 1 ),
 					( tm->last_tx + tx - VIEW_HALF ) * TILE_SIZE,
-					( tm->last_ty - VIEW_HALF - 1 ) * TILE_SIZE );
+					( tm->last_ty - VIEW_HALF - 1 ) * TILE_SIZE,
+					tm->at_pos, tm->at_normal, tm->at_lit );
 			}
 			tm->last_ty--;
 		}
 	}
 }
 
-void terrain_render( const TerrainManager * const tm, const glm::mat4 VP ) {
+void terrain_render( const TerrainManager * const tm, const glm::mat4 VP, const float sun_slope ) {
+	const glm::vec3 sun = glm::normalize( glm::vec3( 1, 0, -sun_slope ) );
+
+	glUseProgram( tm->shader );
+
+	glUniformMatrix4fv( tm->un_vp, 1, GL_FALSE, glm::value_ptr( VP ) );
+	glUniform3fv( tm->un_sun, 1, glm::value_ptr( sun ) );
+
 	for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
 		for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
-			tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty + ty - VIEW_HALF ].render( VP );
+			tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty + ty - VIEW_HALF ].render();
 		}
 	}
+
+	glUseProgram( 0 );
 }
