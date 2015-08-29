@@ -135,9 +135,9 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 		if( new_tx > tm->last_tx ) {
 			printf( "boundary +x\n" );
 			for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
-				tm->tiles[ tm->last_tx - VIEW_HALF ][ ty ].unload();
+				tm->tiles[ tm->last_tx - VIEW_HALF ][ tm->last_ty + ty - VIEW_HALF ].unload();
 
-				tm->tiles[ tm->last_tx + VIEW_HALF + 1 ][ ty ].load(
+				tm->tiles[ tm->last_tx + VIEW_HALF + 1 ][ tm->last_ty + ty - VIEW_HALF ].load(
 					tp( tm, tm->last_tx + VIEW_HALF + 1, tm->last_ty + ty - VIEW_HALF ),
 					( tm->last_tx + VIEW_HALF + 1 ) * TILE_SIZE,
 					( tm->last_ty + ty - VIEW_HALF ) * TILE_SIZE,
@@ -149,9 +149,9 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 		else {
 			printf( "boundary -x\n" );
 			for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
-				tm->tiles[ tm->last_tx + VIEW_HALF ][ ty ].unload();
+				tm->tiles[ tm->last_tx + VIEW_HALF ][ tm->last_ty + ty - VIEW_HALF ].unload();
 
-				tm->tiles[ tm->last_tx - VIEW_HALF - 1 ][ ty ].load(
+				tm->tiles[ tm->last_tx - VIEW_HALF - 1 ][ tm->last_ty + ty - VIEW_HALF ].load(
 					tp( tm, tm->last_tx - VIEW_HALF - 1, tm->last_ty + ty - VIEW_HALF ),
 					( tm->last_tx - VIEW_HALF - 1 ) * TILE_SIZE,
 					( tm->last_ty + ty - VIEW_HALF ) * TILE_SIZE,
@@ -166,9 +166,9 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 		if( new_ty > tm->last_ty ) {
 			printf( "boundary +y\n" );
 			for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
-				tm->tiles[ tx ][ tm->last_ty - VIEW_HALF ].unload();
+				tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty - VIEW_HALF ].unload();
 
-				tm->tiles[ tx ][ tm->last_ty + VIEW_HALF + 1 ].load(
+				tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty + VIEW_HALF + 1 ].load(
 					tp( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty + VIEW_HALF + 1 ),
 					( tm->last_tx + tx - VIEW_HALF ) * TILE_SIZE,
 					( tm->last_ty + VIEW_HALF + 1 ) * TILE_SIZE,
@@ -179,9 +179,9 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 		else {
 			printf( "boundary -y\n" );
 			for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
-				tm->tiles[ tx ][ tm->last_ty + VIEW_HALF ].unload();
+				tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty + VIEW_HALF ].unload();
 
-				tm->tiles[ tx ][ tm->last_ty - VIEW_HALF - 1 ].load(
+				tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty - VIEW_HALF - 1 ].load(
 					tp( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty - VIEW_HALF - 1 ),
 					( tm->last_tx + tx - VIEW_HALF ) * TILE_SIZE,
 					( tm->last_ty - VIEW_HALF - 1 ) * TILE_SIZE,
