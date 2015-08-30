@@ -208,3 +208,12 @@ void terrain_render( const TerrainManager * const tm, const glm::mat4 VP, const 
 
 	glUseProgram( 0 );
 }
+
+float terrain_height( const TerrainManager * const tm, const float x, const float y ) {
+	const u32 tx = x / TILE_SIZE;
+	const u32 ty = y / TILE_SIZE;
+
+	const Heightmap * const hm = &tm->tiles[ tx ][ ty ];
+
+	return hm->height( x - tx * TILE_SIZE, y - ty * TILE_SIZE );
+}

@@ -37,5 +37,6 @@ void terrain_init( TerrainManager * const tm, const char * const tiles_dir );
 void terrain_teleport( TerrainManager * const tm, const glm::vec3 position );
 void terrain_update( TerrainManager * const tm, const glm::vec3 position );
 void terrain_render( const TerrainManager * const tm, const glm::mat4 VP, const float sun_slope );
+float terrain_height( const TerrainManager * const tm, const float x, const float y );
 
 #endif // _TERRAIN_MANAGER_H_

@@ -9,7 +9,7 @@
 #include "intrinsics.h"
 
 class Heightmap {
-private:
+public:
 	u8 * pixels;
 	int w, h;
 
@@ -19,7 +19,6 @@ private:
 	GLuint ebo;
 	GLuint vao;
 
-public:
 	~Heightmap();
 
 	void load( const std::string & image, const int ox, const int oy,
