@@ -163,7 +163,6 @@ void Heightmap::load( const std::string & image, const int ox, const int oy,
 	delete normals;
 	delete indices;
 	delete lit;
-	stbi_image_free( pixels );
 
 	// printf( "sent\n" );
 }
@@ -175,6 +174,8 @@ void Heightmap::unload() {
 		glDeleteBuffers( 1, &vbo_lit );
 		glDeleteBuffers( 1, &ebo );
 		glDeleteVertexArrays( 1, &vao );
+
+		stbi_image_free( pixels );
 
 		vbo_verts = 0;
 	}
