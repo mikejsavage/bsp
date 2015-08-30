@@ -84,7 +84,7 @@ glm::vec3 angles_to_vector_xy( const glm::vec3 & angles ) {
 	return glm::vec3( sin( angles.y ), cos( angles.y ), 0 );
 }
 
-void print_vec3( const std::string & name, const glm::vec3 & v ) {
+static void print_vec3( const std::string & name, const glm::vec3 & v ) {
 	printf( "%s: %.3f %.3f %.3f\n", name.c_str(), v.x, v.y, v.z );
 }
 
