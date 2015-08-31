@@ -19,8 +19,6 @@ public:
 	GLuint ebo;
 	GLuint vao;
 
-	~Heightmap();
-
 	void load( const std::string & image, const int ox, const int oy,
 		const GLint at_pos, const GLint at_normal, const GLint at_lit );
 	void unload();

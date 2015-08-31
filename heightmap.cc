@@ -43,10 +43,6 @@ static glm::vec3 triangle_perp_ccw( const glm::vec3 & a, const glm::vec3 & b, co
 	return glm::cross( b - a, c - a );
 }
 
-Heightmap::~Heightmap() {
-	unload();
-}
-
 void Heightmap::load( const std::string & image, const int ox, const int oy,
 	const GLint at_pos, const GLint at_normal, const GLint at_lit ) {
 	pixels = stbi_load( image.c_str(), &w, &h, nullptr, 1 );
