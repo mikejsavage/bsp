@@ -140,13 +140,9 @@ void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP *
 
 static void bspr_render_leaf( const BSPRenderer * const bspr, const u32 leaf ) {
 	glBindVertexArray( bspr->vaos[ leaf ] );
-
 	glDrawElements( GL_TRIANGLES, bspr->vertex_counts[ leaf ], GL_UNSIGNED_INT, 0 );
-
 	glBindVertexArray( 0 );
 }
-
-static const glm::mat4 P( glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10000.0f ) );
 
 void bspr_render( const BSPRenderer * const bspr, const glm::vec3 & pos ) {
 	const s32 cluster = bspr->bsp->position_to_leaf( pos ).cluster;
