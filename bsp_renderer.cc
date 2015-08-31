@@ -59,7 +59,9 @@ glm::vec3 bspr_face_colour( const BSP * const bsp, const BSP_Face & face ) {
 	}
 }
 
-void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP * const bsp ) {
+void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP * const bsp,
+	const GLint at_position, const GLint at_colour
+) {
 	bspr->arena = arena;
 	bspr->bsp = bsp;
 
@@ -118,9 +120,13 @@ void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP *
 
 		glBindBuffer( GL_ARRAY_BUFFER, bspr->vbos[ l * 2 ] );
 		glBufferData( GL_ARRAY_BUFFER, pos_scratch_used * sizeof( glm::vec3 ), pos_scratch, GL_STATIC_DRAW );
+		glEnableVertexAttribArray( at_position );
+		glVertexAttribPointer( at_position, 3, GL_FLOAT, GL_FALSE, 0, 0 );
 
 		glBindBuffer( GL_ARRAY_BUFFER, bspr->vbos[ l * 2 + 1 ] );
 		glBufferData( GL_ARRAY_BUFFER, colour_scratch_used * sizeof( glm::vec3 ), colour_scratch, GL_STATIC_DRAW );
+		glEnableVertexAttribArray( at_colour );
+		glVertexAttribPointer( at_colour, 3, GL_FLOAT, GL_FALSE, 0, 0 );
 
 		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, bspr->ebos[ l ] );
 		glBufferData( GL_ELEMENT_ARRAY_BUFFER, ebo_scratch_used * sizeof( GLuint ), ebo_scratch, GL_STATIC_DRAW );
@@ -132,17 +138,8 @@ void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP *
 
 }
 
-static void bspr_render_leaf( const BSPRenderer * const bspr, const u32 leaf, const GLint at_position, const GLint at_colour ) {
+static void bspr_render_leaf( const BSPRenderer * const bspr, const u32 leaf ) {
 	glBindVertexArray( bspr->vaos[ leaf ] );
-
-	glBindBuffer( GL_ARRAY_BUFFER, bspr->vbos[ leaf * 2 ] );
-	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, bspr->ebos[ leaf ] );
-	glEnableVertexAttribArray( at_position );
-	glVertexAttribPointer( at_position, 3, GL_FLOAT, GL_FALSE, 0, 0 );
-
-	glBindBuffer( GL_ARRAY_BUFFER, bspr->vbos[ leaf * 2 + 1 ] );
-	glEnableVertexAttribArray( at_colour );
-	glVertexAttribPointer( at_colour, 3, GL_FLOAT, GL_FALSE, 0, 0 );
 
 	glDrawElements( GL_TRIANGLES, bspr->vertex_counts[ leaf ], GL_UNSIGNED_INT, 0 );
 
@@ -151,12 +148,12 @@ static void bspr_render_leaf( const BSPRenderer * const bspr, const u32 leaf, co
 
 static const glm::mat4 P( glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10000.0f ) );
 
-void bspr_render( const BSPRenderer * const bspr, const glm::vec3 & pos, const GLint at_position, const GLint at_colour ) {
+void bspr_render( const BSPRenderer * const bspr, const glm::vec3 & pos ) {
 	const s32 cluster = bspr->bsp->position_to_leaf( pos ).cluster;
 
 	if( cluster == -1 ) {
 		for( u32 i = 0; i < bspr->bsp->num_leaves; i++ ) {
-			bspr_render_leaf( bspr, i, at_position, at_colour );
+			bspr_render_leaf( bspr, i );
 		}
 
 		return;
@@ -169,7 +166,7 @@ void bspr_render( const BSPRenderer * const bspr, const glm::vec3 & pos, const G
 		const s32 pvs_idx = cluster * bspr->bsp->vis->cluster_size + other_cluster / 8;
 
 		if( bspr->bsp->vis->pvs[ pvs_idx ] & ( 1 << other_cluster % 8 ) ) {
-			bspr_render_leaf( bspr, i, at_position, at_colour );
+			bspr_render_leaf( bspr, i );
 		}
 	}
 }

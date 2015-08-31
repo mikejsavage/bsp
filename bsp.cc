@@ -274,8 +274,6 @@ extern "C" GAME_INIT( game_init ) {
 	MemoryArena arena;
 	memarena_init( &arena, memory, megabytes( 10 ) );
 
-	bspr_init( &state->bspr, &arena, &state->bsp );
-
 	state->pos = glm::vec3( 0, -100, 450 );
 	state->angles = glm::radians( ( glm::vec3( -90, 135, 0 ) ) );
 
@@ -283,6 +281,8 @@ extern "C" GAME_INIT( game_init ) {
 	state->test_at_position = glGetAttribLocation( state->test_shader, "position" );
 	state->test_at_colour = glGetAttribLocation( state->test_shader, "colour" );
 	state->test_un_VP = glGetUniformLocation( state->test_shader, "VP" );
+
+	bspr_init( &state->bspr, &arena, &state->bsp, state->test_at_position, state->test_at_colour );
 
 	immediate_init( &imm, triangles, array_count( triangles ) );
 }
@@ -323,7 +323,7 @@ extern "C" GAME_FRAME( game_frame ) {
 	glUseProgram( state->test_shader );
 	glUniformMatrix4fv( state->test_un_VP, 1, GL_FALSE, glm::value_ptr( VP ) );
 
-	bspr_render( &state->bspr, state->pos, state->test_at_position, state->test_at_colour );
+	bspr_render( &state->bspr, state->pos );
 
 	immediate_clear( &imm );
 	immediate_sphere( &imm, glm::vec3( 0, 0, 0 ), 128, glm::vec4( 1, 1, 0, 1 ) );

@@ -16,8 +16,9 @@ struct BSPRenderer {
 	u32 * vertex_counts;
 };
 
-void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP * const bsp );
-void bspr_render( const BSPRenderer * const bspr, const glm::vec3 & pos, const GLint at_position, const GLint at_colour );
+void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP * const bsp,
+	const GLint at_position, const GLint at_colour );
+void bspr_render( const BSPRenderer * const bspr, const glm::vec3 & pos );
 void bspr_destroy( BSPRenderer * const bspr );
 
 #endif // _BSP_RENDERER_H_
