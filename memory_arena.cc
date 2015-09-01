@@ -18,6 +18,15 @@ u8 * memarena_push_size( MemoryArena * const arena, const size_t size, const siz
 	return arena->memory + base_index;
 }
 
+MemoryArena memarena_push_arena( MemoryArena * const arena, const size_t size ) {
+	u8 * const memory = memarena_push_size( arena, size );
+
+	MemoryArena new_arena = { };
+	memarena_init( &new_arena, memory, size );
+
+	return new_arena;
+}
+
 void memarena_clear( MemoryArena * const arena ) {
 	arena->used = 0;
 	arena->num_checkpoints = 0;

@@ -22,6 +22,8 @@ u8 * memarena_push_size( MemoryArena * const arena, const size_t size, const siz
 #define memarena_push_type( arena, type, ... ) ( ( type * ) memarena_push_size( arena, sizeof( type ), ##__VA_ARGS__ ) )
 #define memarena_push_many( arena, type, count, ... ) ( ( type * ) memarena_push_size( arena, sizeof( type ) * count, ##__VA_ARGS__ ) )
 
+MemoryArena memarena_push_arena( MemoryArena * const arena, const size_t size );
+
 void memarena_clear( MemoryArena * const arena );
 
 MemoryArenaCheckpoint memarena_checkpoint( MemoryArena * const arena );
