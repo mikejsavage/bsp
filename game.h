@@ -1,3 +1,64 @@
+// easy = one day
+// medium = one week
+// hard = many weeks
+// hard++ = significant study required
+//
+// rendering
+// 	textures - easy/medium
+// 	unify the renderers - hard
+// 	multithreading - medium
+// 	particles - medium
+// 	fonts - medium/hard
+// 	ui - medium/hard
+// 	allocate vao/vbo on immediate renderer initialization? - easy - probably not worth doing
+// 	ambient aperture lighting - medium
+//
+// lighting
+// 	deferred shading - medium/hard
+// 	shadow volumes - medium/hard
+// 	ambient aperture lighting - medium
+//
+// terrain
+// 	multithreading - easy
+// 	binary triangle trees - hard
+// 	compute proper horizon - medium
+// 	load bsps - hard
+// 	load models? - hard
+//
+// assets
+// 	ram virtual memory - medium
+// 	vram virtual memory - hard
+// 	lock critical assets in memory to avoid graphical glitches - hard
+//
+// collision
+// 	bsp - medium
+// 	heightmap - medium
+// 	bodyblocking/bvh - hard
+// 	models on heightmap - hard
+// 	union - medium
+//
+// sound
+// 	all of it - hard
+//
+// networking
+// 	all of it - hard++
+//
+// 	set up communication client->server with no sync - low/medium
+// 	also simulate movement on server - low/medium
+// 	give server authority when they disagree - low/medium
+// 	go back in time by some amount - low/medium
+// 	rtt estimation - low/medium
+//
+// demo playback/ingame tv
+// 	all of it - hard++
+// 	fp determinism....
+//
+// 	would be nice to have recent gameplay recorded automatically
+// 	mindlink through tv servers
+//
+// animation
+// 	all of it - hard++
+
 #ifndef _GAME_H_
 #define _GAME_H_
 
