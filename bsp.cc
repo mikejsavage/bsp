@@ -270,9 +270,7 @@ static const glm::mat4 P( glm::perspective( glm::radians( 120.0f ), 640.0f / 480
 extern "C" GAME_INIT( game_init ) {
 	state->bsp = BSP( "acidwdm2.bsp" );
 
-	u8 * memory = reserve_persistent( mem, megabytes( 10 ) );
-	MemoryArena arena;
-	memarena_init( &arena, memory, megabytes( 10 ) );
+	MemoryArena arena = memarena_push_arena( &mem->persistent_arena, megabytes( 10 ) );
 
 	state->pos = glm::vec3( 0, -100, 450 );
 	state->angles = glm::radians( ( glm::vec3( -90, 135, 0 ) ) );
@@ -288,8 +286,6 @@ extern "C" GAME_INIT( game_init ) {
 }
 
 extern "C" GAME_FRAME( game_frame ) {
-	GameState * state = ( GameState * ) mem.persistent;
-
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	const int fb = input->keys[ 'w' ] - input->keys[ 's' ];

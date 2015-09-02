@@ -1,8 +1,8 @@
 all: medfall bsp.so hm.so pp
 
-OBJS = main.o gl.o
+OBJS = main.o gl.o memory_arena.o
 BSPOBJS = bsp.o bsp_renderer.o gl.o memory_arena.o immediate.o
-HMOBJS = hm.o heightmap.o terrain_manager.o work_queue.o stb_image.o stb_perlin.o immediate.o stb_truetype.o
+HMOBJS = hm.o heightmap.o terrain_manager.o memory_arena.o work_queue.o immediate.o stb_truetype.o stb_image.o stb_perlin.o
 PPOBJS = pp.o stb_image.o stb_image_write.o
 
 WARNINGS = -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-write-strings -Wno-char-subscripts

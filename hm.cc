@@ -115,7 +115,7 @@ extern "C" GAME_INIT( game_init ) {
 
 	// TODO: persistent memory should be an arena
 	const size_t triangles = 65536;
-	ImmediateTriangle * immediate_memory = ( ImmediateTriangle * ) reserve_persistent( mem, sizeof( ImmediateTriangle ) * triangles );
+	ImmediateTriangle * immediate_memory = memarena_push_many( &mem->persistent_arena, ImmediateTriangle, triangles );
 	immediate_init( &state->test_immediate, immediate_memory, triangles );
 
 	const float aspect = 640.0f / 480.0f;
@@ -153,7 +153,7 @@ extern "C" GAME_INIT( game_init ) {
 	// TODO
 	u8 * const arial = file_get_contents( "Arial.ttf" );
 
-	u8 * const font_memory = reserve_persistent( mem, 512 * 256 );
+	u8 * const font_memory = memarena_push_size( &mem->persistent_arena, 512 * 256 );
 	const int offset = stbtt_GetFontOffsetForIndex( arial, 0 );
 	const int ok = stbtt_BakeFontBitmap( arial, offset, 48, font_memory, 512, 512, ' ', 127 - ' ', state->test_chars );
 	assert( ok > 0 );
@@ -219,8 +219,6 @@ static void draw_string( const GameState * state,
 }
 
 extern "C" GAME_FRAME( game_frame ) {
-	GameState * state = ( GameState * ) mem.persistent;
-
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	const int fb = input->keys[ 'w' ] - input->keys[ 's' ];

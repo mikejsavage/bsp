@@ -10,6 +10,7 @@
 #include "bsp_renderer.h"
 #include "immediate.h"
 #include "work_queue.h"
+#include "memory_arena.h"
 #include "keys.h"
 #include "stb_truetype.h"
 
@@ -41,29 +42,18 @@ struct GameState {
 };
 
 struct GameMemory {
-	size_t persistent_size;
-	size_t persistent_used;
-	u8 * persistent;
+	MemoryArena persistent_arena;
+	GameState * state;
 };
-
-inline u8 * reserve_persistent( GameMemory & mem, const size_t size ) {
-	assert( mem.persistent_used + size <= mem.persistent_size );
-	assert( mem.persistent_used + size > mem.persistent_used );
-
-	u8 * result = mem.persistent + mem.persistent_used;
-	mem.persistent_used += size;
-
-	return result;
-}
 
 struct GameInput {
 	bool keys[ KEY_COUNT ];
 };
 
-#define GAME_INIT( name ) void name( GameState * state, GameMemory & mem )
+#define GAME_INIT( name ) void name( GameState * const state, GameMemory * const mem )
 typedef GAME_INIT( GameInit );
 
-#define GAME_FRAME( name ) void name( GameMemory & mem, const GameInput * const input, const float dt )
+#define GAME_FRAME( name ) void name( GameState * const state, GameMemory * const mem, const GameInput * const input, const float dt )
 typedef GAME_FRAME( GameFrame );
 
 #endif // _GAME_H_

@@ -74,16 +74,19 @@ int main( int argc, char ** argv ) {
 
 	Game game = load_game( game_library_path );
 	GameMemory mem = { };
-	mem.persistent_size = megabytes( 64 );
-	mem.persistent = new u8[ mem.persistent_size ];
 
-	GameState * state = ( GameState * ) reserve_persistent( mem, sizeof( GameState ) );
+	const size_t persistent_size = megabytes( 64 );
+	u8 * const persistent_memory = new u8[ persistent_size ];
+	memarena_init( &mem.persistent_arena, persistent_memory, persistent_size );
+
+	GameState * state = memarena_push_type( &mem.persistent_arena, GameState );
+	mem.state = state;
 
 	GameInput input = { };
 
 	GLFWwindow * const window = GL::init();
 
-	game.init( state, mem );
+	game.init( state, &mem );
 
 	const float program_start_time = glfwGetTime();
 	float last_frame_time = program_start_time;
@@ -119,7 +122,7 @@ int main( int argc, char ** argv ) {
 		input.keys[ KEY_RIGHTARROW ] = glfwGetKey( window, GLFW_KEY_RIGHT );
 
 		if( game.frame ) {
-			game.frame( mem, &input, dt );
+			game.frame( state, &mem, &input, dt );
 		}
 
 		glfwSwapBuffers( window );
