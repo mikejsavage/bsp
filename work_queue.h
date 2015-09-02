@@ -3,8 +3,9 @@
 
 #include "intrinsics.h"
 #include "platform_semaphore.h"
+#include "memory_arena.h"
 
-#define WORK_QUEUE_CALLBACK( name ) void name( void * const data )
+#define WORK_QUEUE_CALLBACK( name ) void name( void * const data, MemoryArena * const arena )
 typedef WORK_QUEUE_CALLBACK( WorkQueueCallback );
 
 struct Job {
@@ -23,9 +24,12 @@ struct WorkQueue {
 
 	volatile u16 jobs_queued;
 	volatile u16 jobs_completed;
+
+	u32 num_threads;
+	MemoryArena * arenas;
 };
 
-void workqueue_init( WorkQueue * const queue, const u32 num_threads );
+void workqueue_init( WorkQueue * const queue, MemoryArena * const arena, const u32 num_threads );
 void workqueue_enqueue( WorkQueue * const queue, WorkQueueCallback * const callback, void * const data );
 void workqueue_exhaust( WorkQueue * const queue );
 

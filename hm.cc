@@ -92,7 +92,7 @@ glm::mat4 P( glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10
 
 static WORK_QUEUE_CALLBACK( testwq ) {
 	u32 i = *( u32 * ) data;
-	printf( "the thread got called %u\n", i );
+	printf( "work %u called with arena %p\n", i, arena->memory );
 }
 
 extern "C" GAME_INIT( game_init ) {
@@ -101,7 +101,7 @@ extern "C" GAME_INIT( game_init ) {
 	terrain_init( &state->tm, "Srtm_ramp2.world.21600x10800.jpg.parts" );
 	terrain_teleport( &state->tm, state->pos );
 
-	workqueue_init( &state->background_tasks, 2 );
+	workqueue_init( &state->background_tasks, &mem->persistent_arena, 2 );
 	u32 nums[ 10 ];
 	for( u32 i = 0; i < 10; i++ ) {
 		nums[ i ] = i;
