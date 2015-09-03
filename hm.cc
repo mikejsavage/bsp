@@ -113,7 +113,6 @@ extern "C" GAME_INIT( game_init ) {
 	state->test_at_position = glGetAttribLocation( state->test_shader, "position" );
 	state->test_at_colour = glGetAttribLocation( state->test_shader, "colour" );
 
-	// TODO: persistent memory should be an arena
 	const size_t triangles = 65536;
 	ImmediateTriangle * immediate_memory = memarena_push_many( &mem->persistent_arena, ImmediateTriangle, triangles );
 	immediate_init( &state->test_immediate, immediate_memory, triangles );
