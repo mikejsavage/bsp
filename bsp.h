@@ -200,7 +200,7 @@ public: // TODO
 	// void trace_seg_leaf( const s32 leaf_idx, BSP_Intersection & bis ) const;
 	// void trace_seg_tree( const s32 node_idx, const glm::vec3 & start, const glm::vec3 & end, const float t1, const float t2, BSP_Intersection & bis ) const;
 
-	void trace_seg_brush( const BSP_Brush & brush, const glm::vec3 start, const glm::vec3 dir, const float tmin, const float tmax, BSP_Intersection & bis ) const;
+	bool trace_seg_brush( const BSP_Brush & brush, const glm::vec3 start, const glm::vec3 dir, const float tmin, const float tmax, float * tout ) const;
 	void trace_seg_leaf( const u32 leaf_idx, const glm::vec3 start, const glm::vec3 dir, const float tmin, const float tmax, BSP_Intersection & bis ) const;
 	void trace_seg_tree( const s32 node_idx, const glm::vec3 start, const glm::vec3 dir, const float tmin, const float tmax, BSP_Intersection & bis ) const;
 

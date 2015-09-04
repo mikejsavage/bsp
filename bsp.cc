@@ -118,7 +118,7 @@ void BSP::load_vis() {
 //
 // from Real-Time Collision Detection by Christer Ericson, published by Morgan
 // Kaufmann Publishers, (c) 2005 Elsevier Inc
-void BSP::trace_seg_brush( const BSP_Brush & brush, const glm::vec3 start, const glm::vec3 dir, const float tmin, const float tmax, BSP_Intersection & bis ) const {
+bool BSP::trace_seg_brush( const BSP_Brush & brush, const glm::vec3 start, const glm::vec3 dir, const float tmin, const float tmax, float * tout ) const {
 	const glm::vec3 end = start + dir * tmax;
 	float tfar = tmin;
 	bool hit = false;
@@ -131,28 +131,33 @@ void BSP::trace_seg_brush( const BSP_Brush & brush, const glm::vec3 start, const
 		const float end_dist = point_plane_distance( end, plane.n, plane.d );
 
 		// both points infront of plane - we are outside the brush
-		if( start_dist > 0 && end_dist > 0 ) return;
+		if( start_dist > 0.0f && end_dist > 0.0f ) return false;
 		// both points behind plane - we intersect with another side
-		if( start_dist <= 0 && end_dist <= 0 ) continue;
+		if( start_dist <= 0.0f && end_dist <= 0.0f ) continue;
 
 		const float denom = -glm::dot( plane.n, dir );
 		const float t = start_dist / denom;
-		// printf( "%.3f %.3f %.3f\n", t, tmin, tmax );
 
 		if( t >= tmin && t <= tmax ) {
 			glm::vec4 colour = glm::vec4( 0, 0, 1, 1 );
 			// TODO: if we are exiting the brush we want the nearest collision
-			if( t >= tfar ) {
-				tfar = t;
-				hit = true;
-				colour = glm::vec4( 1, 1, 1, 1 );
+			if( start_dist >= 0.0f ) {
+				if( t >= tfar ) {
+					tfar = t;
+					hit = true;
+					colour = glm::vec4( 1, 1, 1, 1 );
+				}
 			}
 			immediate_sphere( &imm, start + t * dir, 8, colour, 8 );
 		}
+		else
+			immediate_sphere( &imm, start + t * dir, 8, glm::vec4( 0.5, 0.5, 0.5, 1 ), 8 );
 	}
 
-	bis.hit = hit;
-	if( hit ) bis.is.t = tfar;
+	if( hit ) immediate_sphere( &imm, start + tfar * dir, 16, glm::vec4( 0.5, 0.5, 0.5, 1 ) );
+
+	if( hit ) *tout = tfar;
+	return hit;
 }
 
 void BSP::trace_seg_leaf( const u32 leaf_idx, const glm::vec3 start, const glm::vec3 dir, const float tmin, const float tmax, BSP_Intersection & bis ) const {
@@ -164,15 +169,20 @@ void BSP::trace_seg_leaf( const u32 leaf_idx, const glm::vec3 start, const glm::
 
 		// TODO: magic number
 		if( texture.content_flags & 1 ) {
-			trace_seg_brush( brush, start, dir, tmin, tmax, bis );
-			if( bis.hit ) return; // TODO:
+			float t;
+			bool hit = trace_seg_brush( brush, start, dir, tmin, tmax, &t );
+
+			if( hit && t ) {
+				bis.hit = true;
+				if( t < bis.is.t ) bis.is.t = t;
+			}
 		}
 	}
 }
 
 void BSP::trace_seg_tree( const s32 node_idx, const glm::vec3 start, const glm::vec3 dir, const float tmin, const float tmax, BSP_Intersection & bis ) const {
 	if( bis.hit ) return;
-	// printf( "TST: %.3f %.3f\n", tmin, tmax );
+
 	if( node_idx < 0 ) {
 		trace_seg_leaf( -( node_idx + 1 ), start, dir, tmin, tmax, bis );
 		return;
@@ -222,7 +232,7 @@ void BSP::trace_seg_tree( const s32 node_idx, const glm::vec3 start, const glm::
 
 bool BSP::trace_seg( const glm::vec3 & start, const glm::vec3 & end, Intersection & is ) const {
 	BSP_Intersection bis = { };
-	bis.is.t = 1;
+	bis.is.t = 1.0f;
 	bis.start = start;
 	bis.end = end;
 
