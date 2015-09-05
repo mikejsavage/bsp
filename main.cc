@@ -70,7 +70,7 @@ bool should_reload_game( const char * const path, const time_t lib_write_time ) 
 }
 
 int main( int argc, char ** argv ) {
-	const char * const game_library_path = argc == 2 ? argv[ 1 ] : "./bsp.so";
+	const char * const game_library_path = argc == 2 ? argv[ 1 ] : "./hm.so";
 
 	Game game = load_game( game_library_path );
 	GameMemory mem = { };
@@ -84,7 +84,7 @@ int main( int argc, char ** argv ) {
 
 	GameInput input = { };
 
-	GLFWwindow * const window = GL::init();
+	GLFWwindow * const window = gl_init();
 
 	game.init( state, &mem );
 
@@ -137,7 +137,7 @@ int main( int argc, char ** argv ) {
 
 	unload_game( &game );
 
-	GL::term();
+	gl_term();
 
 	return 0;
 }
