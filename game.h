@@ -11,7 +11,6 @@
 // 	fonts - medium/hard
 // 	ui - medium/hard
 // 	allocate vao/vbo on immediate renderer initialization? - easy - probably not worth doing
-// 	ambient aperture lighting - medium
 //
 // lighting
 // 	deferred shading - medium/hard
@@ -19,8 +18,8 @@
 // 	ambient aperture lighting - medium
 //
 // terrain
-// 	multithreading - easy
-// 	binary triangle trees - hard
+// 	multithreading - medium
+// 	binary triangle trees - medium
 // 	compute proper horizon - medium
 // 	load bsps - hard
 // 	load models? - hard
