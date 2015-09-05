@@ -331,7 +331,7 @@ extern "C" GAME_FRAME( game_frame ) {
 
 	bspr_render( &state->bspr, state->pos );
 
-	immediate_clear( &imm );
+	immediate_init( &imm, triangles, array_count( triangles ) );
 	immediate_sphere( &imm, glm::vec3( 0, 0, 0 ), 128, glm::vec4( 1, 1, 0, 1 ) );
 
 	if( input->keys[ 't' ] ) {
