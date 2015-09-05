@@ -3,10 +3,7 @@
 
 #include <GLFW/glfw3.h>
 
-class GL {
-public:
-	static GLFWwindow * init();
-	static void term();
-};
+GLFWwindow * gl_init();
+void gl_term();
 
 #endif // _GL_H_

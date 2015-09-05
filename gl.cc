@@ -70,7 +70,7 @@ void glfw_error_printer( const int code, const char * const message ) {
 	warnx( "GLFW error %d: %s", code, message );
 }
 
-GLFWwindow * GL::init() {
+GLFWwindow * gl_init() {
 	glfwSetErrorCallback( glfw_error_printer );
 
 	if( !glfwInit() ) {
@@ -116,6 +116,6 @@ GLFWwindow * GL::init() {
 	return window;
 }
 
-void GL::term() {
+void gl_term() {
 	glfwTerminate();
 }
