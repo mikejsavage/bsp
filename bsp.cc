@@ -121,7 +121,9 @@ void BSP::load_vis() {
 bool BSP::trace_seg_brush( const BSP_Brush & brush, const glm::vec3 start, const glm::vec3 dir, const float tmin, const float tmax, float * tout ) const {
 	const glm::vec3 end = start + dir * tmax;
 	float tfar = tmin;
+	float tnear = tmax;
 	bool hit = false;
+	bool starts_inside = true;
 
 	for( u32 i = 0; i < brush.num_sides; i++ ) {
 		const BSP_BrushSide & side = brush_sides[ i + brush.init_side ];
@@ -134,6 +136,8 @@ bool BSP::trace_seg_brush( const BSP_Brush & brush, const glm::vec3 start, const
 		if( start_dist > 0.0f && end_dist > 0.0f ) return false;
 		// both points behind plane - we intersect with another side
 		if( start_dist <= 0.0f && end_dist <= 0.0f ) continue;
+
+		if( start_dist >= 0.0f ) starts_inside = false;
 
 		const float denom = -glm::dot( plane.n, dir );
 		const float t = start_dist / denom;
@@ -148,16 +152,35 @@ bool BSP::trace_seg_brush( const BSP_Brush & brush, const glm::vec3 start, const
 					colour = glm::vec4( 1, 1, 1, 1 );
 				}
 			}
+			else if( t <= tnear ) {
+				tnear = t;
+				hit = true;
+				colour = glm::vec4( 0, 0, 0, 1 );
+			}
 			immediate_sphere( &imm, start + t * dir, 8, colour, 8 );
 		}
 		else
 			immediate_sphere( &imm, start + t * dir, 8, glm::vec4( 0.5, 0.5, 0.5, 1 ), 8 );
 	}
 
-	if( hit ) immediate_sphere( &imm, start + tfar * dir, 16, glm::vec4( 0.5, 0.5, 0.5, 1 ) );
+	glm::vec4 colour = glm::vec4( 1, 0, 1, 1 );
+	if( tnear >= tfar ) colour = glm::vec4( 1, 1, 0, 1 );
 
-	if( hit ) *tout = tfar;
-	return hit;
+	if( hit ) immediate_sphere( &imm, start + tfar * dir, 16, colour );
+	if( hit ) {
+		if( !starts_inside ) {
+			if( tfar <= tnear ) {
+				*tout = tfar;
+				return true;
+			}
+		}
+		else if( tnear < tfar ) {
+			*tout = tnear;
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void BSP::trace_seg_leaf( const u32 leaf_idx, const glm::vec3 start, const glm::vec3 dir, const float tmin, const float tmax, BSP_Intersection & bis ) const {
@@ -172,7 +195,7 @@ void BSP::trace_seg_leaf( const u32 leaf_idx, const glm::vec3 start, const glm::
 			float t;
 			bool hit = trace_seg_brush( brush, start, dir, tmin, tmax, &t );
 
-			if( hit && t ) {
+			if( hit ) {
 				bis.hit = true;
 				if( t < bis.is.t ) bis.is.t = t;
 			}
