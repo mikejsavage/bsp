@@ -1,4 +1,4 @@
-all: medfall bsp.so hm.so pp
+all: medfall bsp.so hm.so pp btt.so
 
 OBJS = main.o gl.o memory_arena.o
 BSPOBJS = bsp.o bsp_renderer.o gl.o memory_arena.o immediate.o
@@ -31,6 +31,9 @@ bsp.so: $(BSPOBJS)
 
 pp: $(PPOBJS)
 	$(CXX) $^ $(LDFLAGS) -o $@
+
+btt.so: btt.o heightmap.o memory_arena.o work_queue.o stb_image.o
+	$(CXX) $^ $(LDFLAGS) -o $@ -shared
 
 clean:
 	rm -f medfall bsp.so hm.so pp $(OBJS) $(BSPOBJS) $(HMOBJS) $(PPOBJS)

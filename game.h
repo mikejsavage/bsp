@@ -67,6 +67,7 @@
 #include "intrinsics.h"
 #include "assets.h"
 #include "terrain_manager.h"
+#include "btt.h"
 #include "bsp.h"
 #include "bsp_renderer.h"
 #include "immediate.h"
@@ -95,6 +96,11 @@ struct GameState {
 	GLint test_tex_at_colour;
 	GLint test_tex_at_uv;
 	GLint test_tex_un_tex;
+
+	GLint test_at_normal;
+	GLint test_at_lit;
+
+	BTTs btt;
 
 	ImmediateContext test_immediate;
 
