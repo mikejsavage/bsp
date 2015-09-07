@@ -96,26 +96,19 @@ static const GLchar * frag_outline_src = GLSL(
 //
 
 static void btt_link_diamond( MemoryArena * const arena, BTT * const node ) {
-	// printf( "linking. left %p right %p bottom %p left_sibling %p right_sibling %p\n", node->left, node->right, node->bottom, node->left_sibling, node->right_sibling );
-
-	// printf( "alloc left/right\n" );
 	node->left = memarena_push_type( arena, BTT );
 	node->right = memarena_push_type( arena, BTT );
 
-	// printf( "zero left/right\n" );
 	*node->left = { };
 	*node->right = { };
 
-	// printf( "link left and right\n" );
-	node->left->right_sibling = node->right;
-	node->right->left_sibling = node->left;
+	node->left->left_sibling = node->right;
+	node->right->right_sibling = node->left;
 
-	// printf( "link left and right bottoms\n" );
 	node->left->bottom = node->left_sibling;
 	node->right->bottom = node->right_sibling;
 
 	if( node->left_sibling ) {
-		// printf( "point left sibling at us\n" );
 		BTT * const ls = node->left_sibling;
 		if( ls->left_sibling == node ) ls->left_sibling = node->left;
 		if( ls->right_sibling == node ) ls->right_sibling = node->left;
@@ -123,7 +116,6 @@ static void btt_link_diamond( MemoryArena * const arena, BTT * const node ) {
 	}
 
 	if( node->right_sibling ) {
-		// printf( "point right sibling at us\n" );
 		BTT * const rs = node->right_sibling;
 		if( rs->left_sibling == node ) rs->left_sibling = node->right;
 		if( rs->right_sibling == node ) rs->right_sibling = node->right;
@@ -132,29 +124,19 @@ static void btt_link_diamond( MemoryArena * const arena, BTT * const node ) {
 }
 
 static void btt_split( MemoryArena * const arena, BTT * const node ) {
-	// printf( "btt_split\n" );
 	assert( node );
-	// assert( !node->left && !node->right );
+	assert( !node->left && !node->right );
 
-	// printf( "do we split bottom? %p\n", node->bottom );
-	// if( node->bottom ) printf( "%p\n", node->bottom->bottom );
 	if( node->bottom && node->bottom->bottom != node ) {
-		assert( !node->bottom->left && !node->bottom->right );
-		// assert( node->bottom->level == node->level - 1 );
-
-		// printf( "yes\n" );
 		btt_split( arena, node->bottom );
 	}
 
-	// printf( "link node\n" );
 	btt_link_diamond( arena, node );
 
 	if( node->bottom ) {
-		// printf( "link bottom\n" );
 		btt_link_diamond( arena, node->bottom );
 
-		// printf( "touch up bottom\n" );
-		node->left->left_sibling = node->bottom->right;
+		node->left->right_sibling = node->bottom->right;
 		node->right->left_sibling = node->bottom->left;
 
 		node->bottom->left->right_sibling = node->right;
