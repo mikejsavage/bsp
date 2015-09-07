@@ -55,7 +55,6 @@ static const GLchar * frag_src = GLSL(
 		float t = smoothstep( 400, 600, depth );
 
 		colour = vec4( ( 1.0 - t ) * ground * light + t * fog, 1.0 );
-		colour = vec4( 1, 0, 0, 1 );
 	}
 );
 
@@ -206,7 +205,8 @@ extern "C" GAME_INIT( game_init ) {
 	state->test_at_colour = glGetAttribLocation( state->test_shader, "colour" );
 	state->test_at_normal = glGetAttribLocation( state->test_shader, "normal" );
 	state->test_at_lit = glGetAttribLocation( state->test_shader, "lit" );
-	state->test_un_VP = glGetUniformLocation( state->test_shader, "VP" );
+	state->test_un_VP = glGetUniformLocation( state->test_shader, "vp" );
+	state->test_un_sun = glGetUniformLocation( state->test_shader, "sun" );
 
 	state->hm.load( "mountains512.png", 0, 0, state->test_at_position,
 		state->test_at_normal, state->test_at_lit );
@@ -249,9 +249,11 @@ extern "C" GAME_FRAME( game_frame ) {
 		),
 		-state->pos
 	);
+	const glm::vec3 sun = glm::normalize( glm::vec3( 1, 0, -0.3 ) );
 
 	glUseProgram( state->test_shader );
 	glUniformMatrix4fv( state->test_un_VP, 1, GL_FALSE, glm::value_ptr( VP ) );
+	glUniform3fv( state->test_un_sun, 1, glm::value_ptr( sun ) );
 	state->hm.render();
 	glUseProgram( 0 );
 }

@@ -99,6 +99,7 @@ struct GameState {
 
 	GLint test_at_normal;
 	GLint test_at_lit;
+	GLint test_un_sun;
 
 	BTTs btt;
 	Heightmap hm;
