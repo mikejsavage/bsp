@@ -197,8 +197,8 @@ BTTs btt_from_heightmap( const Heightmap * const hm, MemoryArena * const arena )
 	roots.left_root->bottom = roots.right_root;
 	roots.right_root->bottom = roots.left_root;
 
-	btt_build( hm, arena, roots.left_root, glm::ivec2( 0, 0 ), glm::ivec2( 0, hm->h ), glm::ivec2( hm->w, hm->h ) );
-	btt_build( hm, arena, roots.right_root, glm::ivec2( hm->w, hm->h ), glm::ivec2( hm->w, 0 ), glm::ivec2( 0, 0 ) );
+	btt_build( hm, arena, roots.left_root, glm::ivec2( 0, 0 ), glm::ivec2( 0, hm->h - 1 ), glm::ivec2( hm->w - 1, hm->h - 1 ) );
+	btt_build( hm, arena, roots.right_root, glm::ivec2( hm->w - 1, hm->h - 1 ), glm::ivec2( hm->w - 1, 0 ), glm::ivec2( 0, 0 ) );
 
 	return roots;
 }
@@ -296,8 +296,8 @@ extern "C" GAME_FRAME( game_frame ) {
 	glUseProgram( 0 );
 
 	immediate_init( &imm, triangles, array_count( triangles ) );
-	draw_btt( state->btt.left_root, &state->hm, &imm, glm::ivec2( 0, 0 ), glm::ivec2( 0, state->hm.h ), glm::ivec2( state->hm.w, state->hm.h ) );
-	draw_btt( state->btt.right_root, &state->hm, &imm, glm::ivec2( state->hm.w, state->hm.h ), glm::ivec2( state->hm.w, 0 ), glm::ivec2( 0, 0 ) );
+	draw_btt( state->btt.left_root, &state->hm, &imm, glm::ivec2( 0, 0 ), glm::ivec2( 0, state->hm.h - 1 ), glm::ivec2( state->hm.w - 1, state->hm.h - 1 ) );
+	draw_btt( state->btt.right_root, &state->hm, &imm, glm::ivec2( state->hm.w - 1, state->hm.h - 1 ), glm::ivec2( state->hm.w - 1, 0 ), glm::ivec2( 0, 0 ) );
 
 	glDisable( GL_DEPTH_TEST );
 	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
