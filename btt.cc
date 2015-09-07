@@ -10,6 +10,9 @@
 #include "gl.h"
 #include "shitty_glsl.h"
 
+static ImmediateTriangle triangles[ 512000 ];
+static ImmediateContext imm;
+
 static const GLchar * const vert_src = GLSL(
 	in vec3 position;
 	in vec3 normal;
@@ -55,6 +58,30 @@ static const GLchar * frag_src = GLSL(
 		float t = smoothstep( 400, 600, depth );
 
 		colour = vec4( ( 1.0 - t ) * ground * light + t * fog, 1.0 );
+	}
+);
+
+static const GLchar * const vert_outline_src = GLSL(
+	in vec3 position;
+	in vec3 colour;
+
+	out vec3 frag_colour;
+
+	uniform mat4 vp;
+
+	void main() {
+		frag_colour = colour;
+		gl_Position = vp * vec4( position, 1.0 );
+	}
+);
+
+static const GLchar * frag_outline_src = GLSL(
+	in vec3 frag_colour;
+
+	out vec4 screen_colour;
+
+	void main() {
+		screen_colour = vec4( frag_colour, 1.0 );
 	}
 );
 
@@ -202,11 +229,15 @@ extern "C" GAME_INIT( game_init ) {
 
 	state->test_shader = compile_shader( vert_src, frag_src, "screen_colour" );
 	state->test_at_position = glGetAttribLocation( state->test_shader, "position" );
-	state->test_at_colour = glGetAttribLocation( state->test_shader, "colour" );
 	state->test_at_normal = glGetAttribLocation( state->test_shader, "normal" );
 	state->test_at_lit = glGetAttribLocation( state->test_shader, "lit" );
 	state->test_un_VP = glGetUniformLocation( state->test_shader, "vp" );
 	state->test_un_sun = glGetUniformLocation( state->test_shader, "sun" );
+
+	state->test_outline_shader = compile_shader( vert_outline_src, frag_outline_src, "screen_colour" );
+	state->test_outline_at_position = glGetAttribLocation( state->test_outline_shader, "position" );
+	state->test_outline_at_colour = glGetAttribLocation( state->test_outline_shader, "colour" );
+	state->test_outline_un_vp = glGetUniformLocation( state->test_outline_shader, "vp" );
 
 	state->hm.load( "mountains512.png", 0, 0, state->test_at_position,
 		state->test_at_normal, state->test_at_lit );
@@ -215,6 +246,30 @@ extern "C" GAME_INIT( game_init ) {
 
 static glm::vec3 angles_to_vector_xy( const glm::vec3 & angles ) {
 	return glm::vec3( sin( angles.y ), cos( angles.y ), 0 );
+}
+
+static void draw_btt(
+	const BTT * const btt, const Heightmap * const hm,
+	ImmediateContext * const imm,
+	const glm::ivec2 v0, const glm::ivec2 v1, const glm::ivec2 v2
+) {
+	const glm::vec4 white( 1, 1, 1, 1 );
+
+	const glm::vec3 v0_( v0, hm->point( v0.x, v0.y ).z );
+	const glm::vec3 v1_( v1, hm->point( v1.x, v1.y ).z );
+	const glm::vec3 v2_( v2, hm->point( v2.x, v2.y ).z );
+
+	if( btt->left ) {
+		assert( btt->right );
+
+		const glm::ivec2 mid = ( v0 + v2 ) / 2;
+
+		draw_btt( btt->left, hm, imm, v1, mid, v0 );
+		draw_btt( btt->right, hm, imm, v2, mid, v1 );
+	}
+	else {
+		immediate_triangle( imm, v0_, v1_, v2_, white );
+	}
 }
 
 extern "C" GAME_FRAME( game_frame ) {
@@ -251,9 +306,24 @@ extern "C" GAME_FRAME( game_frame ) {
 	);
 	const glm::vec3 sun = glm::normalize( glm::vec3( 1, 0, -0.3 ) );
 
+	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 	glUseProgram( state->test_shader );
 	glUniformMatrix4fv( state->test_un_VP, 1, GL_FALSE, glm::value_ptr( VP ) );
 	glUniform3fv( state->test_un_sun, 1, glm::value_ptr( sun ) );
 	state->hm.render();
 	glUseProgram( 0 );
+
+	immediate_init( &imm, triangles, array_count( triangles ) );
+	draw_btt( state->btt.left_root, &state->hm, &imm, glm::ivec2( 0, 0 ), glm::ivec2( 0, state->hm.h ), glm::ivec2( state->hm.w, state->hm.h ) );
+	draw_btt( state->btt.right_root, &state->hm, &imm, glm::ivec2( state->hm.w, state->hm.h ), glm::ivec2( state->hm.w, 0 ), glm::ivec2( 0, 0 ) );
+
+	glDisable( GL_DEPTH_TEST );
+	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
+	glUseProgram( state->test_outline_shader );
+	glUniformMatrix4fv( state->test_outline_un_vp, 1, GL_FALSE, glm::value_ptr( VP ) );
+	immediate_render( &imm, state->test_outline_at_position, state->test_outline_at_colour );
+	glUseProgram( 0 );
+
+	glEnable( GL_DEPTH_TEST );
 }
