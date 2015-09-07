@@ -314,8 +314,6 @@ extern "C" GAME_INIT( game_init ) {
 	state->test_un_VP = glGetUniformLocation( state->test_shader, "VP" );
 
 	bspr_init( &state->bspr, &arena, &state->bsp, state->test_at_position, state->test_at_colour );
-
-	immediate_init( &imm, triangles, array_count( triangles ) );
 }
 
 extern "C" GAME_FRAME( game_frame ) {
