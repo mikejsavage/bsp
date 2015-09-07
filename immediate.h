@@ -27,7 +27,7 @@ void immediate_triangle( ImmediateContext * const ctx,
 void immediate_triangle( ImmediateContext * const ctx,
 	const ImmediateVertex v1, const ImmediateVertex v2, const ImmediateVertex v3 );
 
-void immediate_render( ImmediateContext * const ctx,
+void immediate_render( const ImmediateContext * const ctx,
 	const GLint at_position, const GLint at_colour,
 	const bool textured = false, const GLint at_uv = 0, const GLint un_texture = 0 );
 

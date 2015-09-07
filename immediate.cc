@@ -84,7 +84,7 @@ void immediate_sphere(
 }
 
 void immediate_render(
-	ImmediateContext * const ctx,
+	const ImmediateContext * const ctx,
 	const GLint at_position, const GLint at_colour,
 	const bool textured, const GLint at_uv, const GLint un_texture
 ) {
