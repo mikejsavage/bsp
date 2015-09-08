@@ -147,15 +147,24 @@ static int iabs( const int x ) {
 	return x < 0 ? -x : x;
 }
 
-// TODO: this should be recursive
+static int square_distance( const glm::ivec2 u, const glm::ivec2 v ) {
+	const glm::ivec2 d = v - u;
+	return d.x * d.x + d.y * d.y;
+}
+
 static bool btt_should_split(
 	const Heightmap * const hm,
-	const glm::ivec2 v0, const glm::ivec2 v2, const glm::ivec2 mid
+	const glm::ivec2 v0, const glm::ivec2 v1, const glm::ivec2 v2,
+	const glm::ivec2 mid
 ) {
-	const float avg_height = hm->point( v0.x, v0.y ).z + hm->point( v2.x, v2.y ).z * 0.5f;
+	if( square_distance( v0, v2 ) < 16 ) return false;
+
+	const float avg_height = ( hm->point( v0.x, v0.y ).z + hm->point( v2.x, v2.y ).z ) * 0.5f;
 	const float error = fabsf( avg_height - hm->point( mid.x, mid.y ).z );
 
-	return error > 2.0f;
+	if( error > 2.0f ) return true;
+
+	return btt_should_split( hm, v1, mid, v0, ( v1 + v0 ) / 2 ) || btt_should_split( hm, v2, mid, v1, ( v2 + v1 ) / 2 );
 }
 
 static void btt_build(
@@ -163,16 +172,13 @@ static void btt_build(
 	BTT * const node,
 	const glm::ivec2 v0, const glm::ivec2 v1, const glm::ivec2 v2
 ) {
-	if( iabs( v0.x - v2.x ) < 4 ) return;
-
 	const glm::ivec2 mid = ( v0 + v2 ) / 2;
 
 	if( !node->left ) {
 		assert( !node->right );
 
-		if( btt_should_split( hm, v0, v2, mid ) ) {
+		if( btt_should_split( hm, v0, v1, v2, mid ) ) {
 			btt_split( arena, node );
-			// btt_split( arena, node->bottom );
 		}
 	}
 
