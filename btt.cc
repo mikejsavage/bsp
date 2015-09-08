@@ -8,7 +8,6 @@
 #include "btt.h"
 #include "heightmap.h"
 #include "gl.h"
-#include "shitty_glsl.h"
 
 static ImmediateTriangle triangles[ 512000 ];
 static ImmediateContext imm;

@@ -12,7 +12,6 @@
 #include "gl.h"
 #include "bsp.h"
 #include "bsp_renderer.h"
-#include "shitty_glsl.h"
 
 static ImmediateTriangle triangles[ 512000 ];
 static ImmediateContext imm;

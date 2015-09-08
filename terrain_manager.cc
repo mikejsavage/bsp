@@ -10,13 +10,13 @@
 
 #include <string.h>
 
+#include "platform_opengl.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "intrinsics.h"
 #include "heightmap.h"
 #include "terrain_manager.h"
-#include "shitty_glsl.h"
 
 static const GLchar * const vert_src = GLSL(
 	in vec3 position;

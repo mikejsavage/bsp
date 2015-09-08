@@ -19,9 +19,6 @@
 #include "stb_perlin.h"
 #include "stb_truetype.h"
 
-#include "platform_opengl.h"
-#include "shitty_glsl.h"
-
 static const GLchar * const vert_src = GLSL(
 	in vec3 position;
 	in vec4 colour;
