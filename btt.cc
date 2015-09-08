@@ -223,6 +223,8 @@ extern "C" GAME_INIT( game_init ) {
 	state->hm.load( "mountains512.png", 0, 0, state->test_at_position,
 		state->test_at_normal, state->test_at_lit );
 	state->btt = btt_from_heightmap( &state->hm, &mem->persistent_arena );
+
+	glClearColor( 0, 0.5, 0.7, 1 );
 }
 
 static glm::vec3 angles_to_vector_xy( const glm::vec3 & angles ) {
