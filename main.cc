@@ -70,7 +70,7 @@ bool should_reload_game( const char * const path, const time_t lib_write_time ) 
 }
 
 int main( int argc, char ** argv ) {
-	const char * const game_library_path = argc == 2 ? argv[ 1 ] : "./hm.so";
+	const char * const game_library_path = argc == 2 ? argv[ 1 ] : "./btt.so";
 
 	Game game = load_game( game_library_path );
 	GameMemory mem = { };
