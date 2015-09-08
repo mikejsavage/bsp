@@ -230,10 +230,12 @@ extern "C" GAME_FRAME( game_frame ) {
 	state->angles.x += pitch * dt * 2;
 	state->angles.y += yaw * dt * 2;
 
-	state->pos += angles_to_vector_xy( state->angles ) * 100.0f * dt * ( float ) fb;
+	// const float speed = 6.0f;
+	const float speed = 100.0f;
+	state->pos += angles_to_vector_xy( state->angles ) * speed * dt * ( float ) fb;
 	const glm::vec3 sideways = glm::vec3( -cosf( state->angles.y ), sinf( state->angles.y ), 0 );
-	state->pos += sideways * 100.0f * dt * ( float ) lr;
-	// pos.z = hm.height( pos.x, pos.y ) + 8;
+	state->pos += sideways * speed * dt * ( float ) lr;
+	// state->pos.z = terrain_height( &state->tm, state->pos.x, state->pos.y ) + 2;
 	state->pos.z += dz * 50.0f * dt;
 
 	terrain_update( &state->tm, state->pos );
