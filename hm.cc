@@ -81,10 +81,6 @@ glm::vec3 angles_to_vector_xy( const glm::vec3 & angles ) {
 	return glm::vec3( sin( angles.y ), cos( angles.y ), 0 );
 }
 
-static void print_vec3( const std::string & name, const glm::vec3 & v ) {
-	printf( "%s: %.3f %.3f %.3f\n", name.c_str(), v.x, v.y, v.z );
-}
-
 glm::mat4 P( glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10000.0f ) );
 
 static WORK_QUEUE_CALLBACK( testwq ) {

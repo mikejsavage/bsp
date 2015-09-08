@@ -11,6 +11,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <glm/glm.hpp>
+
+inline void print_vec( const char * const name, const glm::vec3 v ) {
+	printf( "%s: %.3f %.3f %.3f\n", name, v.x, v.y, v.z );
+}
+
+inline void print_vec( const char * const name, const glm::ivec2 v ) {
+	printf( "%s: %d %d\n", name, v.x, v.y );
+}
+
 inline void glterrible() {
 	GLenum err = glGetError();
 	const char * error;
