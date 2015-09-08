@@ -17,7 +17,7 @@ else
 	LDFLAGS += -framework OpenGL -lglfw3
 endif
 
-picky: WARNINGS += -Wunused-parameter -Wunused-function -Wwrite-strings
+picky: WARNINGS += -Wunused-parameter -Wunused-function -Wwrite-strings -Wconversion
 picky: all
 
 medfall: $(OBJS)
