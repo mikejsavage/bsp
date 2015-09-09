@@ -157,7 +157,7 @@ static bool btt_should_split(
 	const glm::ivec2 v0, const glm::ivec2 v1, const glm::ivec2 v2,
 	const glm::ivec2 mid
 ) {
-	if( square_distance( v0, v2 ) < 16 ) return false;
+	if( square_distance( v0, v2 ) <= 4 ) return false;
 
 	const float avg_height = ( hm->point( v0.x, v0.y ).z + hm->point( v2.x, v2.y ).z ) * 0.5f;
 	const float error = fabsf( avg_height - hm->point( mid.x, mid.y ).z );
@@ -244,9 +244,9 @@ static void draw_btt(
 ) {
 	const glm::vec4 white( 1, 1, 1, 1 );
 
-	const glm::vec3 v0_( v0, hm->point( v0.x, v0.y ).z );
-	const glm::vec3 v1_( v1, hm->point( v1.x, v1.y ).z );
-	const glm::vec3 v2_( v2, hm->point( v2.x, v2.y ).z );
+	const glm::vec3 v0_( hm->point( v0.x, v0.y ) );
+	const glm::vec3 v1_( hm->point( v1.x, v1.y ) );
+	const glm::vec3 v2_( hm->point( v2.x, v2.y ) );
 
 	if( btt->left ) {
 		assert( btt->right );
