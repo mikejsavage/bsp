@@ -67,13 +67,16 @@ static const GLchar * frag_src = GLSL(
 );
 
 static void terrain_load(
-	TerrainManager * const tm, const u32 tx, const u32 ty
+	TerrainManager * const tm, const u32 tx, const u32 ty,
+	const u32 vx, const u32 vy
 ) {
 	char path[ 256 ];
 	sprintf( path, "%s/%d_%d.tga", tm->dir, tx, ty );
 
-	tm->tiles[ tx ][ ty ].load( path, tx * TILE_SIZE, ty * TILE_SIZE,
-		tm->at_pos, tm->at_normal, tm->at_lit );
+	Heightmap * const hm = &tm->tiles[ tx ][ ty ];
+
+	if( hm->vbo_verts != 0 ) hm->unload();
+	hm->load( path, tx * TILE_SIZE, ty * TILE_SIZE, tm->at_pos, tm->at_normal, tm->at_lit );
 }
 
 void terrain_init( TerrainManager * const tm, const char * const tiles_dir ) {
@@ -98,6 +101,7 @@ void terrain_init( TerrainManager * const tm, const char * const tiles_dir ) {
 	tm->un_sun = glGetUniformLocation( tm->shader, "sun" );
 
 	tm->first_teleport = true;
+	tm->view_left = tm->view_top = 0;
 }
 
 void terrain_teleport( TerrainManager * const tm, const glm::vec3 position ) {
@@ -120,7 +124,7 @@ void terrain_teleport( TerrainManager * const tm, const glm::vec3 position ) {
 
 	for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
 		for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
-			terrain_load( tm, new_tx + tx - VIEW_HALF, new_ty + ty - VIEW_HALF );
+			terrain_load( tm, new_tx + tx - VIEW_HALF, new_ty + ty - VIEW_HALF, tx, ty );
 		}
 	}
 }
@@ -133,20 +137,19 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 		if( new_tx > tm->last_tx ) {
 			// +x boundary
 			for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
-				tm->tiles[ tm->last_tx - VIEW_HALF ][ tm->last_ty + ty - VIEW_HALF ].unload();
-				terrain_load( tm, tm->last_tx + VIEW_HALF + 1, tm->last_ty + ty - VIEW_HALF );
+				terrain_load( tm, tm->last_tx + VIEW_HALF + 1, tm->last_ty + ty - VIEW_HALF, tm->view_left, tm->view_top );
 			}
-
 			tm->last_tx++;
+			tm->view_left = ( tm->view_left + 1 ) % VIEW_SIZE;
 		}
 		else {
 			// -x boundary
+			const u32 new_view_left = tm->view_left == 0 ? VIEW_SIZE - 1 : tm->view_left - 1;
 			for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
-				tm->tiles[ tm->last_tx + VIEW_HALF ][ tm->last_ty + ty - VIEW_HALF ].unload();
-				terrain_load( tm, tm->last_tx - VIEW_HALF - 1, tm->last_ty + ty - VIEW_HALF );
+				terrain_load( tm, tm->last_tx - VIEW_HALF - 1, tm->last_ty + ty - VIEW_HALF, new_view_left, tm->view_top );
 			}
-
 			tm->last_tx--;
+			tm->view_left = new_view_left;
 		}
 	}
 
@@ -154,18 +157,19 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 		if( new_ty > tm->last_ty ) {
 			// +y boundary
 			for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
-				tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty - VIEW_HALF ].unload();
-				terrain_load( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty + VIEW_HALF + 1 );
+				terrain_load( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty + VIEW_HALF + 1, tm->view_left, tm->view_top );
 			}
 			tm->last_ty++;
+			tm->view_top = ( tm->view_top + 1 ) % VIEW_SIZE;
 		}
 		else {
 			// -y boundary
+			const u32 new_view_top = tm->view_top == 0 ? VIEW_SIZE - 1 : tm->view_top - 1;
 			for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
-				tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty + VIEW_HALF ].unload();
-				terrain_load( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty - VIEW_HALF - 1 );
+				terrain_load( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty - VIEW_HALF - 1, tm->view_left, new_view_top );
 			}
 			tm->last_ty--;
+			tm->view_top = new_view_top;
 		}
 	}
 }

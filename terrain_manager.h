@@ -8,7 +8,6 @@
 #include "heightmap.h"
 
 static const u32 TILE_SIZE = 128;
-static const u32 MAX_TILES_DIM = 256;
 
 static const u32 VIEW_SIZE = 5;
 static const u32 VIEW_HALF = VIEW_SIZE / 2;
@@ -30,7 +29,8 @@ struct TerrainManager {
 
 	bool first_teleport;
 
-	Heightmap tiles[ MAX_TILES_DIM ][ MAX_TILES_DIM ];
+	u32 view_left, view_top;
+	Heightmap tiles[ VIEW_SIZE ][ VIEW_SIZE ];
 };
 
 void terrain_init( TerrainManager * const tm, const char * const tiles_dir );
