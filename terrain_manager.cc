@@ -66,11 +66,14 @@ static const GLchar * frag_src = GLSL(
 	}
 );
 
-// TODO: lol
-static char tp_path[ 256 ];
-static char * tp( const TerrainManager * const tm, const u32 tx, const u32 ty ) {
-	sprintf( tp_path, "%s/%d_%d.tga", tm->dir, tx, ty );
-	return tp_path;
+static void terrain_load(
+	TerrainManager * const tm, const u32 tx, const u32 ty
+) {
+	char path[ 256 ];
+	sprintf( path, "%s/%d_%d.tga", tm->dir, tx, ty );
+
+	tm->tiles[ tx ][ ty ].load( path, tx * TILE_SIZE, ty * TILE_SIZE,
+		tm->at_pos, tm->at_normal, tm->at_lit );
 }
 
 void terrain_init( TerrainManager * const tm, const char * const tiles_dir ) {
@@ -117,12 +120,7 @@ void terrain_teleport( TerrainManager * const tm, const glm::vec3 position ) {
 
 	for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
 		for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
-			tm->tiles[ new_tx + tx - VIEW_HALF ][ new_ty + ty - VIEW_HALF ].load(
-				tp( tm, new_tx + tx - VIEW_HALF, new_ty + ty - VIEW_HALF ),
-				( new_tx + tx - VIEW_HALF ) * TILE_SIZE,
-				( new_ty + ty - VIEW_HALF ) * TILE_SIZE,
-				tm->at_pos, tm->at_normal, tm->at_lit
-			);
+			terrain_load( tm, new_tx + tx - VIEW_HALF, new_ty + ty - VIEW_HALF );
 		}
 	}
 }
@@ -133,29 +131,19 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 
 	if( new_tx != tm->last_tx ) {
 		if( new_tx > tm->last_tx ) {
-			printf( "boundary +x\n" );
+			// +x boundary
 			for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
 				tm->tiles[ tm->last_tx - VIEW_HALF ][ tm->last_ty + ty - VIEW_HALF ].unload();
-
-				tm->tiles[ tm->last_tx + VIEW_HALF + 1 ][ tm->last_ty + ty - VIEW_HALF ].load(
-					tp( tm, tm->last_tx + VIEW_HALF + 1, tm->last_ty + ty - VIEW_HALF ),
-					( tm->last_tx + VIEW_HALF + 1 ) * TILE_SIZE,
-					( tm->last_ty + ty - VIEW_HALF ) * TILE_SIZE,
-					tm->at_pos, tm->at_normal, tm->at_lit );
+				terrain_load( tm, tm->last_tx + VIEW_HALF + 1, tm->last_ty + ty - VIEW_HALF );
 			}
 
 			tm->last_tx++;
 		}
 		else {
-			printf( "boundary -x\n" );
+			// -x boundary
 			for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
 				tm->tiles[ tm->last_tx + VIEW_HALF ][ tm->last_ty + ty - VIEW_HALF ].unload();
-
-				tm->tiles[ tm->last_tx - VIEW_HALF - 1 ][ tm->last_ty + ty - VIEW_HALF ].load(
-					tp( tm, tm->last_tx - VIEW_HALF - 1, tm->last_ty + ty - VIEW_HALF ),
-					( tm->last_tx - VIEW_HALF - 1 ) * TILE_SIZE,
-					( tm->last_ty + ty - VIEW_HALF ) * TILE_SIZE,
-					tm->at_pos, tm->at_normal, tm->at_lit );
+				terrain_load( tm, tm->last_tx - VIEW_HALF - 1, tm->last_ty + ty - VIEW_HALF );
 			}
 
 			tm->last_tx--;
@@ -164,28 +152,18 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 
 	if( new_ty != tm->last_ty ) {
 		if( new_ty > tm->last_ty ) {
-			printf( "boundary +y\n" );
+			// +y boundary
 			for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
 				tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty - VIEW_HALF ].unload();
-
-				tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty + VIEW_HALF + 1 ].load(
-					tp( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty + VIEW_HALF + 1 ),
-					( tm->last_tx + tx - VIEW_HALF ) * TILE_SIZE,
-					( tm->last_ty + VIEW_HALF + 1 ) * TILE_SIZE,
-					tm->at_pos, tm->at_normal, tm->at_lit );
+				terrain_load( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty + VIEW_HALF + 1 );
 			}
 			tm->last_ty++;
 		}
 		else {
-			printf( "boundary -y\n" );
+			// -y boundary
 			for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
 				tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty + VIEW_HALF ].unload();
-
-				tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty - VIEW_HALF - 1 ].load(
-					tp( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty - VIEW_HALF - 1 ),
-					( tm->last_tx + tx - VIEW_HALF ) * TILE_SIZE,
-					( tm->last_ty - VIEW_HALF - 1 ) * TILE_SIZE,
-					tm->at_pos, tm->at_normal, tm->at_lit );
+				terrain_load( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty - VIEW_HALF - 1 );
 			}
 			tm->last_ty--;
 		}
