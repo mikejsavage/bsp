@@ -32,7 +32,7 @@ bsp.so: $(BSPOBJS)
 pp: $(PPOBJS)
 	$(CXX) $^ $(LDFLAGS) -o $@
 
-btt.so: btt.o heightmap.o memory_arena.o work_queue.o stb_image.o immediate.o
+btt.so: btt.o heightmap.o memory_arena.o work_queue.o stb_image.o immediate.o gpubtt.o
 	$(CXX) $^ $(LDFLAGS) -o $@ -shared
 
 clean:

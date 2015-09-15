@@ -67,6 +67,7 @@
 #include "assets.h"
 #include "terrain_manager.h"
 #include "btt.h"
+#include "gpubtt.h"
 #include "heightmap.h"
 #include "bsp.h"
 #include "bsp_renderer.h"
@@ -107,6 +108,7 @@ struct GameState {
 	GLint test_outline_un_vp;
 
 	BTTs btt;
+	GPUBTT gpubtt;
 	Heightmap hm;
 
 	ImmediateContext test_immediate;

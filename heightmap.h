@@ -31,4 +31,9 @@ public:
 	void render() const;
 };
 
+struct OffsetHeightmap {
+	Heightmap hm;
+	float x_offset, y_offset;
+};
+
 #endif // _HEIGHTMAP_H_

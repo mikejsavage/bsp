@@ -230,6 +230,9 @@ extern "C" GAME_INIT( game_init ) {
 		state->test_at_normal, state->test_at_lit );
 	state->btt = btt_from_heightmap( &state->hm, &mem->persistent_arena );
 
+	const OffsetHeightmap ohm = { state->hm, 0, 0 };
+	gpubtt_init( &mem->persistent_arena, &state->gpubtt, &ohm, state->btt, state->test_at_position );
+
 	glClearColor( 0, 0.5, 0.7, 1 );
 }
 
