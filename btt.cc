@@ -243,24 +243,24 @@ static glm::vec3 angles_to_vector_xy( const glm::vec3 & angles ) {
 static void draw_btt(
 	const BTT * const btt, const Heightmap * const hm,
 	ImmediateContext * const imm,
-	const glm::ivec2 v0, const glm::ivec2 v1, const glm::ivec2 v2
+	const glm::ivec2 iv0, const glm::ivec2 iv1, const glm::ivec2 iv2
 ) {
 	const glm::vec4 white( 1, 1, 1, 1 );
 
-	const glm::vec3 v0_( hm->point( v0.x, v0.y ) );
-	const glm::vec3 v1_( hm->point( v1.x, v1.y ) );
-	const glm::vec3 v2_( hm->point( v2.x, v2.y ) );
+	const glm::vec3 v0( hm->point( iv0.x, iv0.y ) );
+	const glm::vec3 v1( hm->point( iv1.x, iv1.y ) );
+	const glm::vec3 v2( hm->point( iv2.x, iv2.y ) );
 
 	if( btt->left ) {
 		assert( btt->right );
 
-		const glm::ivec2 mid = ( v0 + v2 ) / 2;
+		const glm::ivec2 mid = ( iv0 + iv2 ) / 2;
 
-		draw_btt( btt->left, hm, imm, v1, mid, v0 );
-		draw_btt( btt->right, hm, imm, v2, mid, v1 );
+		draw_btt( btt->left, hm, imm, iv1, mid, iv0 );
+		draw_btt( btt->right, hm, imm, iv2, mid, iv1 );
 	}
 	else {
-		immediate_triangle( imm, v0_, v1_, v2_, white );
+		immediate_triangle( imm, v0, v1, v2, white );
 	}
 }
 
