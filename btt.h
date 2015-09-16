@@ -2,6 +2,7 @@
 #define _BTT_H_
 
 #include "memory_arena.h"
+#include "heightmap.h"
 
 struct BTT {
 	BTT * left;
