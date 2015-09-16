@@ -11,7 +11,7 @@
 class Heightmap {
 public:
 	u8 * pixels;
-	int w, h;
+	u32 width, height;
 
 	GLuint vbo_verts = 0;
 	GLuint vbo_normals;
@@ -19,14 +19,10 @@ public:
 	GLuint ebo;
 	GLuint vao;
 
-	void load( const std::string & image, const int ox, const int oy,
-		const GLint at_pos, const GLint at_normal, const GLint at_lit );
-	void unload();
+	glm::vec3 point( u32 x, u32 y ) const;
+	glm::vec3 point_normal( u32 x, u32 y ) const;
 
-	glm::vec3 point( int x, int y ) const;
-	glm::vec3 point_normal( int x, int y ) const;
-
-	float height( const float x, const float y ) const;
+	float bilerp_height( const float x, const float y ) const;
 
 	void render() const;
 };
@@ -35,5 +31,12 @@ struct OffsetHeightmap {
 	Heightmap hm;
 	float x_offset, y_offset;
 };
+
+void heightmap_init( Heightmap * const hm,
+	u8 * const pixels, const u32 width, const u32 height,
+	const float ox, const float oy, // TODO: take rendering out of Heightmap
+	const GLint at_pos, const GLint at_normal, const GLint at_lit );
+
+void heightmap_destroy( Heightmap * const hm );
 
 #endif // _HEIGHTMAP_H_

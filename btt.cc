@@ -8,6 +8,7 @@
 #include "btt.h"
 #include "heightmap.h"
 #include "gl.h"
+#include "stb_image.h"
 
 static ImmediateTriangle triangles[ 512000 ];
 static ImmediateContext imm;
@@ -202,8 +203,8 @@ BTTs btt_from_heightmap( const Heightmap * const hm, MemoryArena * const arena )
 	roots.left_root->bottom = roots.right_root;
 	roots.right_root->bottom = roots.left_root;
 
-	btt_build( hm, arena, roots.left_root, glm::ivec2( 0, 0 ), glm::ivec2( 0, hm->h - 1 ), glm::ivec2( hm->w - 1, hm->h - 1 ) );
-	btt_build( hm, arena, roots.right_root, glm::ivec2( hm->w - 1, hm->h - 1 ), glm::ivec2( hm->w - 1, 0 ), glm::ivec2( 0, 0 ) );
+	btt_build( hm, arena, roots.left_root, glm::ivec2( 0, 0 ), glm::ivec2( 0, hm->height - 1 ), glm::ivec2( hm->width - 1, hm->height - 1 ) );
+	btt_build( hm, arena, roots.right_root, glm::ivec2( hm->width - 1, hm->height - 1 ), glm::ivec2( hm->width - 1, 0 ), glm::ivec2( 0, 0 ) );
 
 	return roots;
 }
@@ -226,8 +227,11 @@ extern "C" GAME_INIT( game_init ) {
 	state->test_outline_at_colour = glGetAttribLocation( state->test_outline_shader, "colour" );
 	state->test_outline_un_vp = glGetUniformLocation( state->test_outline_shader, "vp" );
 
-	state->hm.load( "mountains512.png", 0, 0, state->test_at_position,
-		state->test_at_normal, state->test_at_lit );
+	int w, h;
+	u8 * pixels = stbi_load( "mountains512.png", &w, &h, nullptr, 1 );
+	heightmap_init( &state->hm, pixels, w, h, 0, 0,
+		state->test_at_position, state->test_at_normal, state->test_at_lit );
+
 	state->btt = btt_from_heightmap( &state->hm, &mem->persistent_arena );
 
 	const OffsetHeightmap ohm = { state->hm, 0, 0 };
@@ -307,8 +311,8 @@ extern "C" GAME_FRAME( game_frame ) {
 	glUseProgram( 0 );
 
 	immediate_init( &imm, triangles, array_count( triangles ) );
-	draw_btt( state->btt.left_root, &state->hm, &imm, glm::ivec2( 0, 0 ), glm::ivec2( 0, state->hm.h - 1 ), glm::ivec2( state->hm.w - 1, state->hm.h - 1 ) );
-	draw_btt( state->btt.right_root, &state->hm, &imm, glm::ivec2( state->hm.w - 1, state->hm.h - 1 ), glm::ivec2( state->hm.w - 1, 0 ), glm::ivec2( 0, 0 ) );
+	draw_btt( state->btt.left_root, &state->hm, &imm, glm::ivec2( 0, 0 ), glm::ivec2( 0, state->hm.height - 1 ), glm::ivec2( state->hm.width - 1, state->hm.height - 1 ) );
+	draw_btt( state->btt.right_root, &state->hm, &imm, glm::ivec2( state->hm.width - 1, state->hm.height - 1 ), glm::ivec2( state->hm.width - 1, 0 ), glm::ivec2( 0, 0 ) );
 
 	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 

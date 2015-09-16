@@ -43,71 +43,67 @@ static glm::vec3 triangle_perp_ccw( const glm::vec3 & a, const glm::vec3 & b, co
 	return glm::cross( b - a, c - a );
 }
 
-void Heightmap::load( const std::string & image, const int ox, const int oy,
-	const GLint at_pos, const GLint at_normal, const GLint at_lit ) {
-	pixels = stbi_load( image.c_str(), &w, &h, nullptr, 1 );
+void heightmap_init(
+	Heightmap * const hm,
+	u8 * const pixels, const u32 width, const u32 height,
+	const float ox, const float oy,
+	const GLint at_pos, const GLint at_normal, const GLint at_lit
+) {
+	hm->pixels = pixels;
+	hm->width = width;
+	hm->height = height;
 
-	if( !pixels ) {
-		err( 1, "stbi_load failed (%s)", stbi_failure_reason() );
-	}
-
-	// printf( "begin lit calculations\n" );
-
-	float * const lit = new GLfloat[ w * h ];
-	for( int i = 0; i < w * h; i++ ) {
+	float * const lit = new GLfloat[ width * height ];
+	for( u32 i = 0; i < width * height; i++ ) {
 		lit[ i ] = 0;
 	}
 
-	for( int y = 0; y < h; y++ ) {
-		lit[ y * w ] = -1;
+	for( u32 y = 0; y < height; y++ ) {
+		lit[ y * width ] = -1;
 
-		for( int x = 1; x < w; x++ ) {
-			const float h = point( x, y ).z;
-			const float al = lit[ y * w + x - 1 ];
+		for( u32 x = 1; x < width; x++ ) {
+			const float h = hm->point( x, y ).z;
+			const float al = lit[ y * width + x - 1 ];
 			float dh;
 
 			if( al == -1 ) {
-				dh = point( x - 1, y ).z - ( h + SLOPE );
+				dh = hm->point( x - 1, y ).z - ( h + SLOPE );
 			}
 			else {
 				dh = al - ( h + SLOPE );
 			}
 
 			if( dh > 0 ) {
-				lit[ y * w + x ] = h + dh;
+				lit[ y * width + x ] = h + dh;
 			}
 			else {
-				lit[ y * w + x ] = -1;
+				lit[ y * width + x ] = -1;
 			}
 		}
 	}
 
-	for( int y = 0; y < h; y++ ) {
-		for( int x = 0; x < w; x++ ) {
-			const int i = y * w + x;
+	for( u32 y = 0; y < height; y++ ) {
+		for( u32 x = 0; x < width; x++ ) {
+			const u32 i = y * width + x;
 
 			lit[ i ] = lit[ i ] == -1 ? 1 : 0;
 		}
 	}
 
-	// printf( "end lit calculations\n" );
-        //
-	// printf( "sending data to gpu\n" );
+	GLfloat * const vertices = new GLfloat[ width * height * 3 ];
+	GLfloat * const normals = new GLfloat[ width * height * 3 ];
+	GLuint * const indices = new GLuint[ width * height * 6 ];
 
-	GLfloat * const vertices = new GLfloat[ w * h * 3 ];
-	GLfloat * const normals = new GLfloat[ w * h * 3 ];
-	GLuint * const indices = new GLuint[ w * h * 6 ];
-
-	for( int y = 0; y < h; y++ ) {
-		for( int x = 0; x < w; x++ ) {
-			const int base = 3 * ( y * w + x );
-			const float height = point( x, y ).z;
+	for( u32 y = 0; y < height; y++ ) {
+		for( u32 x = 0; x < width; x++ ) {
+			const u32 base = 3 * ( y * width + x );
+			const float height = hm->point( x, y ).z;
 
 			vertices[ base ] = x + ox;
 			vertices[ base + 1 ] = y + oy;
 			vertices[ base + 2 ] = height;
 
-			const glm::vec3 normal = point_normal( x, y );
+			const glm::vec3 normal = hm->point_normal( x, y );
 
 			normals[ base ] = normal.x;
 			normals[ base + 1 ] = normal.y;
@@ -115,43 +111,43 @@ void Heightmap::load( const std::string & image, const int ox, const int oy,
 		}
 	}
 
-	for( int y = 0; y < h - 1; y++ ) {
-		for( int x = 0; x < w - 1; x++ ) {
-			const int base = 6 * ( y * w + x );
+	for( u32 y = 0; y < height - 1; y++ ) {
+		for( u32 x = 0; x < width - 1; x++ ) {
+			const u32 base = 6 * ( y * width + x );
 
-			indices[ base + 0 ] = ( y + 0 ) * w + ( x + 0 );
-			indices[ base + 1 ] = ( y + 1 ) * w + ( x + 0 );
-			indices[ base + 2 ] = ( y + 0 ) * w + ( x + 1 );
-			indices[ base + 3 ] = ( y + 1 ) * w + ( x + 1 );
-			indices[ base + 4 ] = ( y + 0 ) * w + ( x + 1 );
-			indices[ base + 5 ] = ( y + 1 ) * w + ( x + 0 );
+			indices[ base + 0 ] = ( y + 0 ) * width + ( x + 0 );
+			indices[ base + 1 ] = ( y + 1 ) * width + ( x + 0 );
+			indices[ base + 2 ] = ( y + 0 ) * width + ( x + 1 );
+			indices[ base + 3 ] = ( y + 1 ) * width + ( x + 1 );
+			indices[ base + 4 ] = ( y + 0 ) * width + ( x + 1 );
+			indices[ base + 5 ] = ( y + 1 ) * width + ( x + 0 );
 		}
 	}
 
-	glGenVertexArrays( 1, &vao );
-	glBindVertexArray( vao );
+	glGenVertexArrays( 1, &hm->vao );
+	glBindVertexArray( hm->vao );
 
-	glGenBuffers( 1, &vbo_verts );
-	glBindBuffer( GL_ARRAY_BUFFER, vbo_verts );
-	glBufferData( GL_ARRAY_BUFFER, w * h * sizeof( GLfloat ) * 3, vertices, GL_STATIC_DRAW );
+	glGenBuffers( 1, &hm->vbo_verts );
+	glBindBuffer( GL_ARRAY_BUFFER, hm->vbo_verts );
+	glBufferData( GL_ARRAY_BUFFER, width * height * sizeof( GLfloat ) * 3, vertices, GL_STATIC_DRAW );
 	glEnableVertexAttribArray( at_pos );
 	glVertexAttribPointer( at_pos, 3, GL_FLOAT, GL_FALSE, 0, 0 );
 
-	glGenBuffers( 1, &vbo_normals );
-	glBindBuffer( GL_ARRAY_BUFFER, vbo_normals );
-	glBufferData( GL_ARRAY_BUFFER, w * h * sizeof( GLfloat ) * 3, normals, GL_STATIC_DRAW );
+	glGenBuffers( 1, &hm->vbo_normals );
+	glBindBuffer( GL_ARRAY_BUFFER, hm->vbo_normals );
+	glBufferData( GL_ARRAY_BUFFER, width * height * sizeof( GLfloat ) * 3, normals, GL_STATIC_DRAW );
 	glEnableVertexAttribArray( at_normal );
 	glVertexAttribPointer( at_normal, 3, GL_FLOAT, GL_FALSE, 0, 0 );
 
-	glGenBuffers( 1, &vbo_lit );
-	glBindBuffer( GL_ARRAY_BUFFER, vbo_lit );
-	glBufferData( GL_ARRAY_BUFFER, w * h * sizeof( GLfloat ), lit, GL_STATIC_DRAW );
+	glGenBuffers( 1, &hm->vbo_lit );
+	glBindBuffer( GL_ARRAY_BUFFER, hm->vbo_lit );
+	glBufferData( GL_ARRAY_BUFFER, width * height * sizeof( GLfloat ), lit, GL_STATIC_DRAW );
 	glEnableVertexAttribArray( at_lit );
 	glVertexAttribPointer( at_lit, 1, GL_FLOAT, GL_FALSE, 0, 0 );
 
-	glGenBuffers( 1, &ebo );
-	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, ebo );
-	glBufferData( GL_ELEMENT_ARRAY_BUFFER, w * h * sizeof( GLuint ) * 6, indices, GL_STATIC_DRAW );
+	glGenBuffers( 1, &hm->ebo );
+	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, hm->ebo );
+	glBufferData( GL_ELEMENT_ARRAY_BUFFER, width * height * sizeof( GLuint ) * 6, indices, GL_STATIC_DRAW );
 
 	glBindVertexArray( 0 );
 
@@ -159,29 +155,27 @@ void Heightmap::load( const std::string & image, const int ox, const int oy,
 	delete normals;
 	delete indices;
 	delete lit;
-
-	// printf( "sent\n" );
 }
 
-void Heightmap::unload() {
-	if( vbo_verts != 0 ) {
-		glDeleteBuffers( 1, &vbo_verts );
-		glDeleteBuffers( 1, &vbo_normals );
-		glDeleteBuffers( 1, &vbo_lit );
-		glDeleteBuffers( 1, &ebo );
-		glDeleteVertexArrays( 1, &vao );
+void heightmap_destroy( Heightmap * const hm ) {
+	if( hm->vbo_verts != 0 ) {
+		glDeleteBuffers( 1, &hm->vbo_verts );
+		glDeleteBuffers( 1, &hm->vbo_normals );
+		glDeleteBuffers( 1, &hm->vbo_lit );
+		glDeleteBuffers( 1, &hm->ebo );
+		glDeleteVertexArrays( 1, &hm->vao );
 
-		stbi_image_free( pixels );
+		stbi_image_free( hm->pixels );
 
-		vbo_verts = 0;
+		hm->vbo_verts = 0;
 	}
 }
 
-glm::vec3 Heightmap::point( int x, int y ) const {
-	return glm::vec3( x, y, pixels[ y * w + x ] / 4.0f );
+glm::vec3 Heightmap::point( u32 x, u32 y ) const {
+	return glm::vec3( x, y, pixels[ y * width + x ] / 4.0f );
 }
 
-glm::vec3 Heightmap::point_normal( int x, int y ) const {
+glm::vec3 Heightmap::point_normal( u32 x, u32 y ) const {
 	glm::vec3 bent_normal = glm::vec3( 0 );
 
 	/*
@@ -209,7 +203,7 @@ glm::vec3 Heightmap::point_normal( int x, int y ) const {
 
 			bent_normal += triangle_normal_ccw( tri2a, tri2b, tri2c );
 		}
-		if( y < h - 1 ) { // top left
+		if( y < height - 1 ) { // top left
 			const glm::vec3 tri5a = point( x, y );
 			const glm::vec3 tri5b = point( x - 1, y + 1 );
 			const glm::vec3 tri5c = point( x - 1, y );
@@ -223,7 +217,7 @@ glm::vec3 Heightmap::point_normal( int x, int y ) const {
 		}
 	}
 
-	if( x < w - 1 ) {
+	if( x < width - 1 ) {
 		if( y > 0 ) { // bottom right
 			const glm::vec3 tri3a = point( x, y );
 			const glm::vec3 tri3b = point( x, y - 1 );
@@ -236,7 +230,7 @@ glm::vec3 Heightmap::point_normal( int x, int y ) const {
 			bent_normal += triangle_normal_ccw( tri3a, tri3b, tri3c );
 			bent_normal += triangle_normal_ccw( tri4a, tri4b, tri4c );
 		}
-		if( y < h - 1 ) { // top right
+		if( y < height - 1 ) { // top right
 			const glm::vec3 tri1a = point( x, y );
 			const glm::vec3 tri1b = point( x + 1, y );
 			const glm::vec3 tri1c = point( x, y + 1 );
@@ -248,7 +242,7 @@ glm::vec3 Heightmap::point_normal( int x, int y ) const {
 	return glm::normalize( bent_normal );
 }
 
-float Heightmap::height( const float x, const float y ) const {
+float Heightmap::bilerp_height( const float x, const float y ) const {
 	const float ix = floorf( x );
 	const float iy = floorf( y );
 
@@ -265,6 +259,6 @@ void Heightmap::render() const {
 	assert( vbo_verts != 0 );
 
 	glBindVertexArray( vao );
-	glDrawElements( GL_TRIANGLES, w * h * 6, GL_UNSIGNED_INT, 0 );
+	glDrawElements( GL_TRIANGLES, width * height * 6, GL_UNSIGNED_INT, 0 );
 	glBindVertexArray( 0 );
 }

@@ -55,8 +55,8 @@ void gpubtt_init(
 	glm::vec3 * const verts = memarena_push_many( mem, glm::vec3, num_leaves * 3 );
 	u32 i = 0;
 
-	gpubtt_build( verts, &i, ohm, btts.left_root, glm::ivec2( 0, 0 ), glm::ivec2( 0, ohm->hm.h - 1 ), glm::ivec2( ohm->hm.w - 1, ohm->hm.h - 1 ) );
-	gpubtt_build( verts, &i, ohm, btts.right_root, glm::ivec2( ohm->hm.w - 1, ohm->hm.h - 1 ), glm::ivec2( ohm->hm.w - 1, 0 ), glm::ivec2( 0, 0 ) );
+	gpubtt_build( verts, &i, ohm, btts.left_root, glm::ivec2( 0, 0 ), glm::ivec2( 0, ohm->hm.height - 1 ), glm::ivec2( ohm->hm.width - 1, ohm->hm.height - 1 ) );
+	gpubtt_build( verts, &i, ohm, btts.right_root, glm::ivec2( ohm->hm.width - 1, ohm->hm.height - 1 ), glm::ivec2( ohm->hm.width - 1, 0 ), glm::ivec2( 0, 0 ) );
 
 	glGenVertexArrays( 1, &gpubtt->vao );
 	glBindVertexArray( gpubtt->vao );

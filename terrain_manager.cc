@@ -17,6 +17,8 @@
 #include "intrinsics.h"
 #include "heightmap.h"
 #include "terrain_manager.h"
+#include "work_queue.h"
+#include "stb_image.h"
 
 static const GLchar * const vert_src = GLSL(
 	in vec3 position;
@@ -75,8 +77,21 @@ static void terrain_load(
 
 	Heightmap * const hm = &tm->tiles[ tx ][ ty ];
 
-	if( hm->vbo_verts != 0 ) hm->unload();
-	hm->load( path, tx * TILE_SIZE, ty * TILE_SIZE, tm->at_pos, tm->at_normal, tm->at_lit );
+	if( hm->vbo_verts != 0 ) heightmap_destroy( hm );
+
+	size_t len;
+	u8 * contents = file_get_contents( path, &len );
+	assert( contents );
+
+	int width, height;
+	u8 * pixels = stbi_load_from_memory( contents, len, &width, &height, nullptr, 1 );
+	free( contents );
+
+	if( !pixels ) err( 1, "stbi_load failed (%s)", stbi_failure_reason() );
+
+	heightmap_init( hm, pixels, width, height,
+		tx * TILE_SIZE, ty * TILE_SIZE,
+		tm->at_pos, tm->at_normal, tm->at_lit );
 }
 
 void terrain_init( TerrainManager * const tm, const char * const tiles_dir ) {
@@ -112,7 +127,7 @@ void terrain_teleport( TerrainManager * const tm, const glm::vec3 position ) {
 	if( !tm->first_teleport ) {
 		for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
 			for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
-				tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty + ty - VIEW_HALF ].unload();
+				heightmap_destroy( &tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty + ty - VIEW_HALF ] );
 			}
 		}
 	}
@@ -197,5 +212,5 @@ float terrain_height( const TerrainManager * const tm, const float x, const floa
 
 	const Heightmap * const hm = &tm->tiles[ tx ][ ty ];
 
-	return hm->height( x - tx * TILE_SIZE, y - ty * TILE_SIZE );
+	return hm->bilerp_height( x - tx * TILE_SIZE, y - ty * TILE_SIZE );
 }
