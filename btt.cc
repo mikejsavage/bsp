@@ -302,7 +302,7 @@ extern "C" GAME_FRAME( game_frame ) {
 	glUseProgram( state->test_shader );
 	glUniformMatrix4fv( state->test_un_VP, 1, GL_FALSE, glm::value_ptr( VP ) );
 	glUniform3fv( state->test_un_sun, 1, glm::value_ptr( sun ) );
-	state->hm.render();
+	gpubtt_render( &state->gpubtt );
 	glUseProgram( 0 );
 
 	immediate_init( &imm, triangles, array_count( triangles ) );

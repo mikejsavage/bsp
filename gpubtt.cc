@@ -24,9 +24,9 @@ static void gpubtt_build(
 ) {
 	const glm::vec3 offset( ohm->x_offset, ohm->y_offset, 0.0f );
 
-	const glm::vec3 v0( ohm->hm.point( v0.x, v0.y ) + offset );
-	const glm::vec3 v1( ohm->hm.point( v1.x, v1.y ) + offset );
-	const glm::vec3 v2( ohm->hm.point( v2.x, v2.y ) + offset );
+	const glm::vec3 v0( ohm->hm.point( iv0.x, iv0.y ) + offset );
+	const glm::vec3 v1( ohm->hm.point( iv1.x, iv1.y ) + offset );
+	const glm::vec3 v2( ohm->hm.point( iv2.x, iv2.y ) + offset );
 
 	if( btt->left ) {
 		const glm::ivec2 mid = ( iv0 + iv2 ) / 2;
@@ -35,9 +35,10 @@ static void gpubtt_build(
 		gpubtt_build( verts, i, ohm, btt->right, iv2, mid, iv1 );
 	}
 	else {
-		verts[ *i++ ] = v0;
-		verts[ *i++ ] = v1;
-		verts[ *i++ ] = v2;
+		verts[ *i + 0 ] = v0;
+		verts[ *i + 1 ] = v1;
+		verts[ *i + 2 ] = v2;
+		*i += 3;
 	}
 }
 
@@ -62,7 +63,7 @@ void gpubtt_init(
 
 	glGenBuffers( 1, &gpubtt->vbo_verts );
 	glBindBuffer( GL_ARRAY_BUFFER, gpubtt->vbo_verts );
-	glBufferData( GL_ARRAY_BUFFER, num_leaves * sizeof( GLfloat ) * 3, verts, GL_STATIC_DRAW );
+	glBufferData( GL_ARRAY_BUFFER, i * 3 * sizeof( GLfloat ), verts, GL_STATIC_DRAW );
 	glEnableVertexAttribArray( at_position );
 	glVertexAttribPointer( at_position, 3, GL_FLOAT, GL_FALSE, 0, 0 );
 
@@ -80,6 +81,6 @@ void gpubtt_destroy( GPUBTT * const gpubtt ) {
 
 void gpubtt_render( const GPUBTT * const gpubtt ) {
 	glBindVertexArray( gpubtt->vao );
-	glDrawElements( GL_TRIANGLES, gpubtt->num_verts, GL_UNSIGNED_INT, 0 );
+	glDrawArrays( GL_TRIANGLES, 0, gpubtt->num_verts * 3 );
 	glBindVertexArray( 0 );
 }
