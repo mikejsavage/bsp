@@ -246,10 +246,11 @@ static void draw_btt(
 	const glm::ivec2 iv0, const glm::ivec2 iv1, const glm::ivec2 iv2
 ) {
 	const glm::vec4 white( 1, 1, 1, 1 );
+	const glm::vec3 offset( 0.0f, 0.0f, 0.5f );
 
-	const glm::vec3 v0( hm->point( iv0.x, iv0.y ) + glm::vec3( 0.0f, 0.0f, 0.5f ) );
-	const glm::vec3 v1( hm->point( iv1.x, iv1.y ) + glm::vec3( 0.0f, 0.0f, 0.5f ) );
-	const glm::vec3 v2( hm->point( iv2.x, iv2.y ) + glm::vec3( 0.0f, 0.0f, 0.5f ) );
+	const glm::vec3 v0( hm->point( iv0.x, iv0.y ) + offset );
+	const glm::vec3 v1( hm->point( iv1.x, iv1.y ) + offset );
+	const glm::vec3 v2( hm->point( iv2.x, iv2.y ) + offset );
 
 	if( btt->left ) {
 		assert( btt->right );
