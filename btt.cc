@@ -247,9 +247,9 @@ static void draw_btt(
 ) {
 	const glm::vec4 white( 1, 1, 1, 1 );
 
-	const glm::vec3 v0( hm->point( iv0.x, iv0.y ) );
-	const glm::vec3 v1( hm->point( iv1.x, iv1.y ) );
-	const glm::vec3 v2( hm->point( iv2.x, iv2.y ) );
+	const glm::vec3 v0( hm->point( iv0.x, iv0.y ) + glm::vec3( 0.0f, 0.0f, 0.5f ) );
+	const glm::vec3 v1( hm->point( iv1.x, iv1.y ) + glm::vec3( 0.0f, 0.0f, 0.5f ) );
+	const glm::vec3 v2( hm->point( iv2.x, iv2.y ) + glm::vec3( 0.0f, 0.0f, 0.5f ) );
 
 	if( btt->left ) {
 		assert( btt->right );
@@ -309,13 +309,10 @@ extern "C" GAME_FRAME( game_frame ) {
 	draw_btt( state->btt.left_root, &state->hm, &imm, glm::ivec2( 0, 0 ), glm::ivec2( 0, state->hm.h - 1 ), glm::ivec2( state->hm.w - 1, state->hm.h - 1 ) );
 	draw_btt( state->btt.right_root, &state->hm, &imm, glm::ivec2( state->hm.w - 1, state->hm.h - 1 ), glm::ivec2( state->hm.w - 1, 0 ), glm::ivec2( 0, 0 ) );
 
-	glDisable( GL_DEPTH_TEST );
 	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 	glUseProgram( state->test_outline_shader );
 	glUniformMatrix4fv( state->test_outline_un_vp, 1, GL_FALSE, glm::value_ptr( VP ) );
 	immediate_render( &imm, state->test_outline_at_position, state->test_outline_at_colour );
 	glUseProgram( 0 );
-
-	glEnable( GL_DEPTH_TEST );
 }
