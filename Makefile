@@ -36,7 +36,7 @@ btt.so: btt.o heightmap.o memory_arena.o work_queue.o stb_image.o immediate.o gp
 	$(CXX) $^ $(LDFLAGS) -o $@ -shared
 
 clean:
-	rm -f medfall bsp.so hm.so pp $(OBJS) $(BSPOBJS) $(HMOBJS) $(PPOBJS)
+	rm -f medfall bsp.so hm.so pp *.o
 
 stb_image.o: stb_image.cc
 	$(CXX) $(CXXFLAGS) -c -o $@ $^ -DSTB_IMAGE_IMPLEMENTATION
