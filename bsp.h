@@ -207,10 +207,10 @@ public: // TODO
 	BSP_Leaf & position_to_leaf( const glm::vec3 & pos ) const;
 
 public:
-	BSP( std::string filename );
-	~BSP();
-
 	bool trace_seg( const glm::vec3 & start, const glm::vec3 & end, Intersection & is ) const;
 };
+
+void bsp_init( BSP * bsp, std::string filename );
+void bsp_destroy( BSP * bsp );
 
 #endif // _BSP_H_

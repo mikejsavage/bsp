@@ -55,7 +55,7 @@ float point_plane_distance( const glm::vec3 point, const glm::vec3 normal, const
 	return glm::dot( point, normal ) - d;
 }
 
-BSP::BSP( const std::string filename ) {
+void bsp_init( BSP * bsp, std::string filename ) {
 	std::ifstream file( filename, std::ifstream::binary );
 
 	assert( file.is_open() );
@@ -64,29 +64,29 @@ BSP::BSP( const std::string filename ) {
 	ssize_t len = file.tellg();
 	file.seekg( 0, file.beg );
 
-	contents = new char[ len ];
-	file.read( contents, len );
+	bsp->contents = new char[ len ];
+	file.read( bsp->contents, len );
 
 	assert( ( file.rdstate() & std::ifstream::failbit ) == 0 );
 
 	file.close();
 
-	load_lump( num_textures, textures, LUMP_TEXTURES );
-	load_lump( num_planes, planes, LUMP_PLANES );
-	load_lump( num_nodes, nodes, LUMP_NODES );
-	load_lump( num_leaves, leaves, LUMP_LEAVES );
-	load_lump( num_leaf_faces, leaf_faces, LUMP_LEAFFACES );
-	load_lump( num_leaf_brushes, leaf_brushes, LUMP_LEAFBRUSHES );
-	load_lump( num_brushes, brushes, LUMP_BRUSHES );
-	load_lump( num_brush_sides, brush_sides, LUMP_BRUSHSIDES );
-	load_lump( num_vertices, vertices, LUMP_VERTICES );
-	load_lump( num_mesh_verts, mesh_verts, LUMP_MESHVERTS );
-	load_lump( num_faces, faces, LUMP_FACES );
-	load_vis();
+	bsp->load_lump( bsp->num_textures, bsp->textures, LUMP_TEXTURES );
+	bsp->load_lump( bsp->num_planes, bsp->planes, LUMP_PLANES );
+	bsp->load_lump( bsp->num_nodes, bsp->nodes, LUMP_NODES );
+	bsp->load_lump( bsp->num_leaves, bsp->leaves, LUMP_LEAVES );
+	bsp->load_lump( bsp->num_leaf_faces, bsp->leaf_faces, LUMP_LEAFFACES );
+	bsp->load_lump( bsp->num_leaf_brushes, bsp->leaf_brushes, LUMP_LEAFBRUSHES );
+	bsp->load_lump( bsp->num_brushes, bsp->brushes, LUMP_BRUSHES );
+	bsp->load_lump( bsp->num_brush_sides, bsp->brush_sides, LUMP_BRUSHSIDES );
+	bsp->load_lump( bsp->num_vertices, bsp->vertices, LUMP_VERTICES );
+	bsp->load_lump( bsp->num_mesh_verts, bsp->mesh_verts, LUMP_MESHVERTS );
+	bsp->load_lump( bsp->num_faces, bsp->faces, LUMP_FACES );
+	bsp->load_vis();
 }
 
-BSP::~BSP() {
-	delete contents;
+void bsp_destroy( BSP * bsp ) {
+	delete bsp->contents;
 }
 
 template< typename T >
@@ -300,7 +300,7 @@ glm::vec3 angles_to_vector( const glm::vec3 & angles ) {
 static const glm::mat4 P( glm::perspective( glm::radians( 120.0f ), 640.0f / 480.0f, 0.1f, 10000.0f ) );
 
 extern "C" GAME_INIT( game_init ) {
-	state->bsp = BSP( "acidwdm2.bsp" );
+	bsp_init( &state->bsp, "acidwdm2.bsp" );
 
 	MemoryArena arena = memarena_push_arena( &mem->persistent_arena, megabytes( 10 ) );
 
