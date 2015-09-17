@@ -3,6 +3,11 @@
 // hard = many weeks
 // hard++ = significant study required
 //
+// general
+// 	general maths functions like clamp/rng - medium
+// 	bounded arithmetic classes? - easy/medium
+// 		would be used in terrain manager
+//
 // rendering
 // 	textures - easy/medium
 // 	unify the renderers - hard
