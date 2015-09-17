@@ -8,6 +8,7 @@
 
 #include "intrinsics.h"
 #include "heightmap.h"
+#include "memory_arena.h"
 #include "stb_image.h"
 #include "stb_perlin.h"
 
@@ -44,7 +45,7 @@ static glm::vec3 triangle_perp_ccw( const glm::vec3 & a, const glm::vec3 & b, co
 }
 
 void heightmap_init(
-	Heightmap * const hm,
+	Heightmap * const hm, MemoryArena * const mem,
 	u8 * const pixels, const u32 width, const u32 height,
 	const float ox, const float oy,
 	const GLint at_pos, const GLint at_normal, const GLint at_lit
@@ -53,7 +54,13 @@ void heightmap_init(
 	hm->width = width;
 	hm->height = height;
 
-	float * const lit = new GLfloat[ width * height ];
+	MemoryArenaCheckpoint cp = memarena_checkpoint( mem );
+
+	GLfloat * const vertices = memarena_push_many( mem, GLfloat, width * height * 3 );
+	GLfloat * const normals = memarena_push_many( mem, GLfloat, width * height * 3 );
+	GLuint * const indices = memarena_push_many( mem, GLuint, width * height * 6 );
+	GLfloat * const lit = memarena_push_many( mem, GLfloat, width * height );
+
 	for( u32 i = 0; i < width * height; i++ ) {
 		lit[ i ] = 0;
 	}
@@ -89,10 +96,6 @@ void heightmap_init(
 			lit[ i ] = lit[ i ] == -1 ? 1 : 0;
 		}
 	}
-
-	GLfloat * const vertices = new GLfloat[ width * height * 3 ];
-	GLfloat * const normals = new GLfloat[ width * height * 3 ];
-	GLuint * const indices = new GLuint[ width * height * 6 ];
 
 	for( u32 y = 0; y < height; y++ ) {
 		for( u32 x = 0; x < width; x++ ) {
@@ -151,10 +154,7 @@ void heightmap_init(
 
 	glBindVertexArray( 0 );
 
-	delete vertices;
-	delete normals;
-	delete indices;
-	delete lit;
+	memarena_restore( mem, &cp );
 }
 
 void heightmap_destroy( Heightmap * const hm ) {

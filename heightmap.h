@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 
 #include "intrinsics.h"
+#include "memory_arena.h"
 
 class Heightmap {
 public:
@@ -32,7 +33,7 @@ struct OffsetHeightmap {
 	float x_offset, y_offset;
 };
 
-void heightmap_init( Heightmap * const hm,
+void heightmap_init( Heightmap * const hm, MemoryArena * const mem,
 	u8 * const pixels, const u32 width, const u32 height,
 	const float ox, const float oy, // TODO: take rendering out of Heightmap
 	const GLint at_pos, const GLint at_normal, const GLint at_lit );

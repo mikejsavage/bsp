@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 
 #include "intrinsics.h"
+#include "memory_arena.h"
 #include "heightmap.h"
 
 static const u32 TILE_SIZE = 128;
@@ -15,8 +16,9 @@ static const u32 VIEW_HALF = VIEW_SIZE / 2;
 struct TerrainManager {
 	char dir[ 128 ];
 
+	MemoryArena * mem;
+
 	u32 width, height;
-	u32 last_tx, last_ty;
 
 	GLuint shader;
 
@@ -29,11 +31,15 @@ struct TerrainManager {
 
 	bool first_teleport;
 
+	// tile_x and tile_y are the coordinates of the tile we are centered on
+	// view_x and view_y are indices into tiles of the tile we are centered on
+	u32 tile_x, tile_y;
 	u32 view_left, view_top;
 	Heightmap tiles[ VIEW_SIZE ][ VIEW_SIZE ];
 };
 
-void terrain_init( TerrainManager * const tm, const char * const tiles_dir );
+void terrain_init( TerrainManager * const tm, const char * const tiles_dir,
+	MemoryArena * const mem );
 void terrain_teleport( TerrainManager * const tm, const glm::vec3 position );
 void terrain_update( TerrainManager * const tm, const glm::vec3 position );
 void terrain_render( const TerrainManager * const tm, const glm::mat4 VP, const float sun_slope );

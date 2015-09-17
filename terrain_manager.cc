@@ -1,13 +1,3 @@
-/*
- * I use the following naming conventions in this file::
- * TODO: no i dont
- *
- *   - tx/ty are used to denote tile coordinates
- *   - ptx/pty are used to denote the player's tile coordinates
- *   - x/y are used to denote local coordinates within a tile
- *   - wx/wy are used to denote global coordinates
- */
-
 #include <string.h>
 
 #include "platform_opengl.h"
@@ -17,6 +7,7 @@
 #include "intrinsics.h"
 #include "heightmap.h"
 #include "terrain_manager.h"
+#include "memory_arena.h"
 #include "work_queue.h"
 #include "stb_image.h"
 
@@ -69,13 +60,13 @@ static const GLchar * frag_src = GLSL(
 );
 
 static void terrain_load(
-	TerrainManager * const tm, const u32 tx, const u32 ty,
-	const u32 vx, const u32 vy
+	TerrainManager * const tm, const u32 tile_x, const u32 tile_y,
+	const u32 view_x, const u32 view_y
 ) {
 	char path[ 256 ];
-	sprintf( path, "%s/%d_%d.tga", tm->dir, tx, ty );
+	sprintf( path, "%s/%d_%d.tga", tm->dir, tile_x, tile_y );
 
-	Heightmap * const hm = &tm->tiles[ tx ][ ty ];
+	Heightmap * const hm = &tm->tiles[ view_x ][ view_y ];
 
 	if( hm->vbo_verts != 0 ) heightmap_destroy( hm );
 
@@ -89,14 +80,19 @@ static void terrain_load(
 
 	if( !pixels ) err( 1, "stbi_load failed (%s)", stbi_failure_reason() );
 
-	heightmap_init( hm, pixels, width, height,
-		tx * TILE_SIZE, ty * TILE_SIZE,
+	heightmap_init( hm, tm->mem, pixels, width, height,
+		tile_x * TILE_SIZE, tile_y * TILE_SIZE,
 		tm->at_pos, tm->at_normal, tm->at_lit );
 }
 
-void terrain_init( TerrainManager * const tm, const char * const tiles_dir ) {
+void terrain_init(
+	TerrainManager * const tm, const char * const tiles_dir,
+	MemoryArena * const mem
+) {
 	assert( strlen( tiles_dir ) < array_count( tm->dir ) );
 	strcpy( tm->dir, tiles_dir );
+
+	tm->mem = mem;
 
 	char dims_path[ 256 ];
 	sprintf( dims_path, "%s/dims.txt", tm->dir );
@@ -120,71 +116,95 @@ void terrain_init( TerrainManager * const tm, const char * const tiles_dir ) {
 }
 
 void terrain_teleport( TerrainManager * const tm, const glm::vec3 position ) {
-	const u32 new_tx = position.x / TILE_SIZE;
-	const u32 new_ty = position.y / TILE_SIZE;
-
-	// TODO: this is a cheap hack
 	if( !tm->first_teleport ) {
-		for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
-			for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
-				heightmap_destroy( &tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty + ty - VIEW_HALF ] );
+		for( u32 vy = 0; vy < VIEW_SIZE; vy++ ) {
+			for( u32 vx = 0; vx < VIEW_SIZE; vx++ ) {
+				heightmap_destroy( &tm->tiles[ vx ][ vy ] );
 			}
 		}
 	}
 
 	tm->first_teleport = false;
 
-	tm->last_tx = new_tx;
-	tm->last_ty = new_ty;
+	const u32 player_tile_x = position.x / TILE_SIZE;
+	const u32 player_tile_y = position.y / TILE_SIZE;
 
-	for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
-		for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
-			terrain_load( tm, new_tx + tx - VIEW_HALF, new_ty + ty - VIEW_HALF, tx, ty );
+	tm->tile_x = player_tile_x;
+	tm->tile_y = player_tile_y;
+
+	for( u32 vy = 0; vy < VIEW_SIZE; vy++ ) {
+		for( u32 vx = 0; vx < VIEW_SIZE; vx++ ) {
+			terrain_load( tm,
+				vx + player_tile_x - VIEW_HALF, vy + player_tile_y - VIEW_HALF,
+				vx, vy );
 		}
 	}
 }
 
-void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
-	const u32 new_tx = position.x / TILE_SIZE;
-	const u32 new_ty = position.y / TILE_SIZE;
+static u32 view_sub( u32 v, u32 o ) {
+	if( v >= o ) return v - o;
+	return VIEW_SIZE - ( o - v );
+}
 
-	if( new_tx != tm->last_tx ) {
-		if( new_tx > tm->last_tx ) {
+static u32 view_add( u32 v, u32 o ) {
+	return ( v + o ) % VIEW_SIZE;
+}
+
+void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
+	const u32 player_tile_x = position.x / TILE_SIZE;
+	const u32 player_tile_y = position.y / TILE_SIZE;
+
+	if( player_tile_x != tm->tile_x ) {
+		if( player_tile_x > tm->tile_x ) {
 			// +x boundary
-			for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
-				terrain_load( tm, tm->last_tx + VIEW_HALF + 1, tm->last_ty + ty - VIEW_HALF, tm->view_left, tm->view_top );
+			for( u32 vy = 0; vy < VIEW_SIZE; vy++ ) {
+				terrain_load( tm,
+					tm->tile_x + VIEW_HALF + 1,
+					tm->tile_y + vy - VIEW_HALF,
+					view_add( tm->view_left, VIEW_SIZE ),
+					view_add( tm->view_top, vy ) );
 			}
-			tm->last_tx++;
-			tm->view_left = ( tm->view_left + 1 ) % VIEW_SIZE;
+			tm->tile_x++;
+			tm->view_left = view_add( tm->view_left, 1 );
 		}
 		else {
 			// -x boundary
-			const u32 new_view_left = tm->view_left == 0 ? VIEW_SIZE - 1 : tm->view_left - 1;
-			for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
-				terrain_load( tm, tm->last_tx - VIEW_HALF - 1, tm->last_ty + ty - VIEW_HALF, new_view_left, tm->view_top );
+			for( u32 vy = 0; vy < VIEW_SIZE; vy++ ) {
+				terrain_load( tm,
+					tm->tile_x - VIEW_HALF - 1,
+					tm->tile_y + vy - VIEW_HALF,
+					view_sub( tm->view_left, 1 ),
+					view_add( tm->view_top, vy ) );
 			}
-			tm->last_tx--;
-			tm->view_left = new_view_left;
+			tm->tile_x--;
+			tm->view_left = view_sub( tm->view_left, 1 );
 		}
 	}
 
-	if( new_ty != tm->last_ty ) {
-		if( new_ty > tm->last_ty ) {
+	if( player_tile_y != tm->tile_y ) {
+		if( player_tile_y > tm->tile_y ) {
 			// +y boundary
-			for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
-				terrain_load( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty + VIEW_HALF + 1, tm->view_left, tm->view_top );
+			for( u32 vx = 0; vx < VIEW_SIZE; vx++ ) {
+				terrain_load( tm,
+					tm->tile_x + vx - VIEW_HALF,
+					tm->tile_y + VIEW_HALF + 1,
+					view_add( tm->view_left, vx ),
+					view_add( tm->view_top, VIEW_SIZE ) );
 			}
-			tm->last_ty++;
-			tm->view_top = ( tm->view_top + 1 ) % VIEW_SIZE;
+			tm->tile_y++;
+			tm->view_top = view_add( tm->view_top, 1 );
 		}
 		else {
 			// -y boundary
-			const u32 new_view_top = tm->view_top == 0 ? VIEW_SIZE - 1 : tm->view_top - 1;
-			for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
-				terrain_load( tm, tm->last_tx + tx - VIEW_HALF, tm->last_ty - VIEW_HALF - 1, tm->view_left, new_view_top );
+			for( u32 vx = 0; vx < VIEW_SIZE; vx++ ) {
+				terrain_load( tm,
+					tm->tile_x + vx - VIEW_HALF,
+					tm->tile_y - VIEW_HALF - 1,
+					view_add( tm->view_left, vx ),
+					view_sub( tm->view_top, 1 ) );
 			}
-			tm->last_ty--;
-			tm->view_top = new_view_top;
+			tm->tile_y--;
+			tm->view_top = view_sub( tm->view_top, 1 );
 		}
 	}
 }
@@ -197,9 +217,9 @@ void terrain_render( const TerrainManager * const tm, const glm::mat4 VP, const 
 	glUniformMatrix4fv( tm->un_vp, 1, GL_FALSE, glm::value_ptr( VP ) );
 	glUniform3fv( tm->un_sun, 1, glm::value_ptr( sun ) );
 
-	for( u32 ty = 0; ty < VIEW_SIZE; ty++ ) {
-		for( u32 tx = 0; tx < VIEW_SIZE; tx++ ) {
-			tm->tiles[ tm->last_tx + tx - VIEW_HALF ][ tm->last_ty + ty - VIEW_HALF ].render();
+	for( u32 vy = 0; vy < VIEW_SIZE; vy++ ) {
+		for( u32 vx = 0; vx < VIEW_SIZE; vx++ ) {
+			tm->tiles[ vx ][ vy ].render();
 		}
 	}
 
@@ -210,6 +230,8 @@ float terrain_height( const TerrainManager * const tm, const float x, const floa
 	const u32 tx = x / TILE_SIZE;
 	const u32 ty = y / TILE_SIZE;
 
+	// TODO: totally wrong
+	// convert into tile space
 	const Heightmap * const hm = &tm->tiles[ tx ][ ty ];
 
 	return hm->bilerp_height( x - tx * TILE_SIZE, y - ty * TILE_SIZE );

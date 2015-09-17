@@ -229,7 +229,7 @@ extern "C" GAME_INIT( game_init ) {
 
 	int w, h;
 	u8 * pixels = stbi_load( "mountains512.png", &w, &h, nullptr, 1 );
-	heightmap_init( &state->hm, pixels, w, h, 0, 0,
+	heightmap_init( &state->hm, &mem->persistent_arena, pixels, w, h, 0, 0,
 		state->test_at_position, state->test_at_normal, state->test_at_lit );
 
 	state->btt = btt_from_heightmap( &state->hm, &mem->persistent_arena );
