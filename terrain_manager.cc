@@ -59,14 +59,14 @@ static const GLchar * frag_src = GLSL(
 	}
 );
 
-static void terrain_load(
-	TerrainManager * const tm, const u32 tile_x, const u32 tile_y,
-	const u32 view_x, const u32 view_y
+static void terrain_load_tile(
+	TerrainManager * const tm, const u32 tx, const u32 ty,
+	const u32 vx, const u32 vy
 ) {
 	char path[ 256 ];
-	sprintf( path, "%s/%d_%d.tga", tm->dir, tile_x, tile_y );
+	sprintf( path, "%s/%d_%d.tga", tm->dir, tx, ty );
 
-	Heightmap * const hm = &tm->tiles[ view_x ][ view_y ];
+	Heightmap * const hm = &tm->tiles[ vx ][ vy ];
 
 	if( hm->vbo_verts != 0 ) heightmap_destroy( hm );
 
@@ -81,7 +81,7 @@ static void terrain_load(
 	if( !pixels ) err( 1, "stbi_load failed (%s)", stbi_failure_reason() );
 
 	heightmap_init( hm, tm->mem, pixels, width, height,
-		tile_x * TILE_SIZE, tile_y * TILE_SIZE,
+		tx * TILE_SIZE, ty * TILE_SIZE,
 		tm->at_pos, tm->at_normal, tm->at_lit );
 }
 
@@ -134,7 +134,7 @@ void terrain_teleport( TerrainManager * const tm, const glm::vec3 position ) {
 
 	for( u32 vy = 0; vy < VIEW_SIZE; vy++ ) {
 		for( u32 vx = 0; vx < VIEW_SIZE; vx++ ) {
-			terrain_load( tm,
+			terrain_load_tile( tm,
 				vx + player_tile_x - VIEW_HALF, vy + player_tile_y - VIEW_HALF,
 				vx, vy );
 		}
@@ -158,7 +158,7 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 		if( player_tile_x > tm->tile_x ) {
 			// +x boundary
 			for( u32 vy = 0; vy < VIEW_SIZE; vy++ ) {
-				terrain_load( tm,
+				terrain_load_tile( tm,
 					tm->tile_x + VIEW_HALF + 1,
 					tm->tile_y + vy - VIEW_HALF,
 					view_add( tm->view_left, VIEW_SIZE ),
@@ -170,7 +170,7 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 		else {
 			// -x boundary
 			for( u32 vy = 0; vy < VIEW_SIZE; vy++ ) {
-				terrain_load( tm,
+				terrain_load_tile( tm,
 					tm->tile_x - VIEW_HALF - 1,
 					tm->tile_y + vy - VIEW_HALF,
 					view_sub( tm->view_left, 1 ),
@@ -185,7 +185,7 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 		if( player_tile_y > tm->tile_y ) {
 			// +y boundary
 			for( u32 vx = 0; vx < VIEW_SIZE; vx++ ) {
-				terrain_load( tm,
+				terrain_load_tile( tm,
 					tm->tile_x + vx - VIEW_HALF,
 					tm->tile_y + VIEW_HALF + 1,
 					view_add( tm->view_left, vx ),
@@ -197,7 +197,7 @@ void terrain_update( TerrainManager * const tm, const glm::vec3 position ) {
 		else {
 			// -y boundary
 			for( u32 vx = 0; vx < VIEW_SIZE; vx++ ) {
-				terrain_load( tm,
+				terrain_load_tile( tm,
 					tm->tile_x + vx - VIEW_HALF,
 					tm->tile_y - VIEW_HALF - 1,
 					view_add( tm->view_left, vx ),
