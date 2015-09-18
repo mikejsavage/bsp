@@ -226,13 +226,28 @@ void terrain_render( const TerrainManager * const tm, const glm::mat4 VP, const 
 	glUseProgram( 0 );
 }
 
-float terrain_height( const TerrainManager * const tm, const float x, const float y ) {
-	const u32 tx = x / TILE_SIZE;
-	const u32 ty = y / TILE_SIZE;
+// TODO: this is horrible
+// it's probably worth using view_x/y instead of view_left/top
+// and using signed arithmetic to make this less annoying
+// also implement the bounded arithmetic class
+float terrain_height( const TerrainManager * const tm, const glm::vec3 position ) {
+	// see doodles/tile_coords_to_view_coords.png for docs
+	const u32 player_tile_x = position.x / TILE_SIZE;
+	const u32 player_tile_y = position.y / TILE_SIZE;
 
-	// TODO: totally wrong
-	// convert into tile space
-	const Heightmap * const hm = &tm->tiles[ tx ][ ty ];
+	if( player_tile_x < tm->tile_x ) assert( tm->tile_x - player_tile_x <= VIEW_HALF );
+	else assert( player_tile_x - tm->tile_x <= VIEW_HALF );
+	if( player_tile_y < tm->tile_y ) assert( tm->tile_y - player_tile_y <= VIEW_HALF );
+	else assert( player_tile_y - tm->tile_y <= VIEW_HALF );
 
-	return hm->bilerp_height( x - tx * TILE_SIZE, y - ty * TILE_SIZE );
+	const u32 dx = player_tile_x - tm->tile_x;
+	const u32 dy = player_tile_y - tm->tile_y;
+
+	const u32 vx = view_add( tm->view_left, VIEW_HALF + dx );
+	const u32 vy = view_add( tm->view_top, VIEW_HALF + dy );
+
+	const Heightmap * const hm = &tm->tiles[ vx ][ vy ];
+
+	return hm->bilerp_height( position.x - player_tile_x * TILE_SIZE,
+		position.y - player_tile_y * TILE_SIZE );
 }
