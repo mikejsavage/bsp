@@ -1,10 +1,8 @@
 medfall
 pp
+
 *.o
 *.so
-ttvfs
-*.bsp
 
-*.jpg
-*.png
+*.bsp
 *.parts

@@ -1,6 +1,6 @@
-![BSP renderer](bsp.png)
-![Terrain renderer](hm.png)
-![Terrain paging](tiles.png)
+![BSP renderer](screenshots/bsp.png)
+![Terrain renderer](screenshots/hm.png)
+![Terrain paging](screenshots/tiles.png)
 
 OpenGL 3.2 support:
 

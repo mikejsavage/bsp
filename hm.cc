@@ -91,7 +91,7 @@ static WORK_QUEUE_CALLBACK( testwq ) {
 extern "C" GAME_INIT( game_init ) {
 	state->pos = glm::vec3( 15000, 3000, 50 );
 	state->angles = glm::radians( glm::vec3( -90, 45, 0 ) );
-	terrain_init( &state->tm, "Srtm_ramp2.world.21600x10800.jpg.parts", &mem->persistent_arena );
+	terrain_init( &state->tm, "terrains/Srtm_ramp2.world.21600x10800.jpg.parts", &mem->persistent_arena );
 	terrain_teleport( &state->tm, state->pos );
 
 	workqueue_init( &state->background_tasks, &mem->persistent_arena, 2 );

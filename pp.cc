@@ -38,7 +38,7 @@ void write_tile( const std::string & dir, const int tx, const int ty ) {
 }
 
 int main( int argc, char ** argv ) {
-	const std::string path = argc == 2 ? argv[ 1 ] : "mountains512.png";
+	const std::string path = argc == 2 ? argv[ 1 ] : "terrains/mountains512.png";
 	pixels = stbi_load( path.c_str(), &w, &h, nullptr, 1 );
 
 	const std::string dir = path + ".parts";

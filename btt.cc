@@ -228,7 +228,7 @@ extern "C" GAME_INIT( game_init ) {
 	state->test_outline_un_vp = glGetUniformLocation( state->test_outline_shader, "vp" );
 
 	int w, h;
-	u8 * pixels = stbi_load( "mountains512.png", &w, &h, nullptr, 1 );
+	u8 * pixels = stbi_load( "terrains/mountains512.png", &w, &h, nullptr, 1 );
 	heightmap_init( &state->hm, &mem->persistent_arena, pixels, w, h, 0, 0,
 		state->test_at_position, state->test_at_normal, state->test_at_lit );
 
