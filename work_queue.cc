@@ -6,9 +6,10 @@
 #include "platform_barrier.h"
 #include "platform_semaphore.h"
 
-struct ThreadIDAndWorkQueue {
+struct ThreadInfo {
 	u32 thread_id;
 	WorkQueue * queue;
+	volatile u32 * started_threads;
 };
 
 static bool workqueue_step( const u32 thread_id, WorkQueue * const queue ) {
@@ -30,11 +31,16 @@ static bool workqueue_step( const u32 thread_id, WorkQueue * const queue ) {
 }
 
 static void * workqueue_worker( void * const data ) {
-	ThreadIDAndWorkQueue * const idq = ( ThreadIDAndWorkQueue * const ) data;
-	WorkQueue * const queue = idq->queue;
+	ThreadInfo * const info = ( ThreadInfo * const ) data;
+
+	WorkQueue * const queue = info->queue;
+	const u32 thread_id = info->thread_id;
+
+	write_barrier();
+	__sync_fetch_and_add( info->started_threads, 1 );
 
 	for( ;; ) {
-		if( !workqueue_step( idq->thread_id, queue ) ) {
+		if( !workqueue_step( thread_id, queue ) ) {
 			semaphore_wait( &queue->sem );
 		}
 	}
@@ -54,17 +60,21 @@ void workqueue_init( WorkQueue * const queue, MemoryArena * const arena, const u
 	}
 
 	MemoryArenaCheckpoint cp = memarena_checkpoint( arena );
-	ThreadIDAndWorkQueue * idqs = memarena_push_many( arena, ThreadIDAndWorkQueue, num_threads );
+	ThreadInfo * infos = memarena_push_many( arena, ThreadInfo, num_threads );
+	volatile u32 started_threads = 0;
 
 	for( u32 i = 0; i < num_threads; i++ ) {
-		idqs[ i ] = { i, queue };
+		infos[ i ] = { i, queue, &started_threads };
 
 		pthread_t thread;
-		const int ok = pthread_create( &thread, nullptr, workqueue_worker, &idqs[ i ] );
+		const int ok = pthread_create( &thread, nullptr, workqueue_worker, &infos[ i ] );
 		if( ok == -1 ) {
 			err( 1, "pthread_create" );
 		}
 	}
+
+	// wait until all threads have a local copy of ThreadInfo
+	while( started_threads < num_threads );
 
 	memarena_restore( arena, &cp );
 }
