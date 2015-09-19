@@ -60,7 +60,10 @@ void workqueue_init( WorkQueue * const queue, MemoryArena * const arena, const u
 		idqs[ i ] = { i, queue };
 
 		pthread_t thread;
-		pthread_create( &thread, nullptr, workqueue_worker, &idqs[ i ] );
+		const int ok = pthread_create( &thread, nullptr, workqueue_worker, &idqs[ i ] );
+		if( ok == -1 ) {
+			err( 1, "pthread_create" );
+		}
 	}
 
 	memarena_restore( arena, &cp );
