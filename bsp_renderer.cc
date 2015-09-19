@@ -93,12 +93,12 @@ void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP *
 		for( u32 f = 0; f < leaf.num_faces; f++ ) {
 			const u32 offset = pos_scratch_used;
 
-			const BSP_LeafFace & leaf_face = bsp->leaf_faces[ f + leaf.init_face ];
+			const BSP_LeafFace & leaf_face = bsp->leaf_faces[ f + leaf.first_face ];
 			const BSP_Face & face = bsp->faces[ leaf_face ];
 			const glm::vec3 colour = bspr_face_colour( bsp, face );
 
-			const BSP_Vertex * const vertices = &bsp->vertices[ face.init_vert ];
-			const s32 * const indices = &bsp->mesh_verts[ face.init_mesh_vert ];
+			const BSP_Vertex * const vertices = &bsp->vertices[ face.first_vert ];
+			const s32 * const indices = &bsp->mesh_verts[ face.first_mesh_vert ];
 
 			for( s32 v = 0; v < face.num_verts; v++ ) {
 				const glm::vec3 & pos = vertices[ v ].pos;

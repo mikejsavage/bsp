@@ -71,10 +71,10 @@ struct BSP_Leaf {
 	s32 mins[ 3 ];
 	s32 maxs[ 3 ];
 
-	u32 init_face;
+	u32 first_face;
 	u32 num_faces;
 
-	u32 init_brush;
+	u32 first_brush;
 	u32 num_brushes;
 };
 
@@ -84,7 +84,7 @@ typedef u32 BSP_LeafBrush;
 // LUMP_MODELS
 
 struct BSP_Brush {
-	u32 init_side;
+	u32 first_side;
 	u32 num_sides;
 
 	s32 texture;
@@ -111,9 +111,9 @@ struct BSP_Face {
 	s32 effect;
 	s32 type;
 
-	s32 init_vert;
+	s32 first_vert;
 	s32 num_verts;
-	s32 init_mesh_vert;
+	s32 first_mesh_vert;
 	s32 num_mesh_verts;
 
 	s32 lightmap;

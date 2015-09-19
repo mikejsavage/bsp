@@ -125,7 +125,7 @@ bool BSP::trace_seg_brush( const BSP_Brush & brush, const glm::vec3 start, const
 	bool starts_inside = true;
 
 	for( u32 i = 0; i < brush.num_sides; i++ ) {
-		const BSP_BrushSide & side = brush_sides[ i + brush.init_side ];
+		const BSP_BrushSide & side = brush_sides[ i + brush.first_side ];
 		const BSP_Plane & plane = planes[ side.plane ];
 
 		const float start_dist = point_plane_distance( start, plane.n, plane.d );
@@ -186,7 +186,7 @@ void BSP::trace_seg_leaf( const u32 leaf_idx, const glm::vec3 start, const glm::
 	const BSP_Leaf & leaf = leaves[ leaf_idx ];
 
 	for( u32 i = 0; i < leaf.num_brushes; i++ ) {
-		const BSP_Brush & brush = brushes[ leaf_brushes[ i + leaf.init_brush ] ];
+		const BSP_Brush & brush = brushes[ leaf_brushes[ i + leaf.first_brush ] ];
 		const BSP_Texture & texture = textures[ brush.texture ];
 
 		// TODO: magic number
