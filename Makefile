@@ -1,7 +1,7 @@
 all: medfall bsp.so hm.so pp btt.so
 
-OBJS = main.o gl.o memory_arena.o
-BSPOBJS = bsp.o bsp_renderer.o gl.o memory_arena.o immediate.o
+MAINOBJS = main.o gl.o memory_arena.o
+BSPOBJS = bsp.o bsp_renderer.o memory_arena.o immediate.o
 HMOBJS = hm.o heightmap.o terrain_manager.o memory_arena.o work_queue.o immediate.o stb_truetype.o stb_image.o stb_perlin.o
 PPOBJS = pp.o stb_image.o stb_image_write.o
 
@@ -20,7 +20,7 @@ endif
 picky: WARNINGS += -Wunused-parameter -Wunused-function -Wwrite-strings -Wconversion
 picky: all
 
-medfall: $(OBJS)
+medfall: $(MAINOBJS)
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 hm.so: $(HMOBJS)
