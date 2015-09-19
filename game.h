@@ -8,6 +8,9 @@
 // 	bounded arithmetic classes? - easy/medium
 // 		would be used in terrain manager
 //
+// platform
+// 	platform specific mutexes - easy
+//
 // rendering
 // 	textures - easy/medium
 // 	unify the renderers - hard

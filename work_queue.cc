@@ -1,9 +1,8 @@
-#include <err.h>
-#include <pthread.h>
-
 #include "intrinsics.h"
 #include "work_queue.h"
 #include "platform_barrier.h"
+#include "platform_thread.h"
+#include "platform_atomic.h"
 #include "platform_semaphore.h"
 
 struct ThreadInfo {
@@ -17,11 +16,11 @@ static bool workqueue_step( const u32 thread_id, WorkQueue * const queue ) {
 	const u16 new_head = ( current_head + 1 ) % array_count( queue->jobs );
 
 	if( current_head != queue->tail ) {
-		if( __sync_bool_compare_and_swap( &queue->head, current_head, new_head ) ) {
+		if( atomic_cas_u16( &queue->head, current_head, new_head ) ) {
 			const Job & job = queue->jobs[ current_head ];
 			job.callback( job.data, &queue->arenas[ thread_id ] );
 
-			__sync_fetch_and_add( &queue->jobs_completed, 1 );
+			atomic_add_u16( &queue->jobs_completed, 1 );
 		}
 
 		return true;
@@ -37,7 +36,7 @@ static void * workqueue_worker( void * const data ) {
 	const u32 thread_id = info->thread_id;
 
 	write_barrier();
-	__sync_fetch_and_add( info->started_threads, 1 );
+	atomic_add_u32( info->started_threads, 1 );
 
 	for( ;; ) {
 		if( !workqueue_step( thread_id, queue ) ) {
@@ -66,11 +65,8 @@ void workqueue_init( WorkQueue * const queue, MemoryArena * const arena, const u
 	for( u32 i = 0; i < num_threads; i++ ) {
 		infos[ i ] = { i, queue, &started_threads };
 
-		pthread_t thread;
-		const int ok = pthread_create( &thread, nullptr, workqueue_worker, &infos[ i ] );
-		if( ok == -1 ) {
-			err( 1, "pthread_create" );
-		}
+		Thread thread;
+		thread_init( &thread, workqueue_worker, &infos[ i ] );
 	}
 
 	// wait until all threads have a local copy of ThreadInfo
