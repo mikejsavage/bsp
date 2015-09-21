@@ -60,10 +60,11 @@ glm::vec3 bspr_face_colour( const BSP * const bsp, const BSP_Face & face ) {
 }
 
 void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP * const bsp,
-	const GLint at_position, const GLint at_colour
+	const GLuint shader, const GLint at_position, const GLint at_colour
 ) {
 	bspr->arena = arena;
 	bspr->bsp = bsp;
+	bspr->shader = shader;
 
 	bspr->vaos = memarena_push_many( arena, GLuint, bsp->num_leaves );
 	bspr->vbos = memarena_push_many( arena, GLuint, bsp->num_leaves * 2 );
@@ -135,21 +136,20 @@ void bspr_init( BSPRenderer * const bspr, MemoryArena * const arena, const BSP *
 
 		bspr->vertex_counts[ l ] = ebo_scratch_used;
 	}
-
 }
 
-static void bspr_render_leaf( const BSPRenderer * const bspr, const u32 leaf ) {
-	glBindVertexArray( bspr->vaos[ leaf ] );
-	glDrawElements( GL_TRIANGLES, bspr->vertex_counts[ leaf ], GL_UNSIGNED_INT, 0 );
-	glBindVertexArray( 0 );
+static void bspr_render_leaf( Renderer * const renderer, const BSPRenderer * const bspr, const u32 leaf ) {
+	renderer_push( renderer, GL_TRIANGLES,
+		bspr->vaos[ leaf ], bspr->shader,
+		true, bspr->vertex_counts[ leaf ] );
 }
 
-void bspr_render( const BSPRenderer * const bspr, const glm::vec3 & pos ) {
+void bspr_render( Renderer * const renderer, const BSPRenderer * const bspr, const glm::vec3 & pos ) {
 	const s32 cluster = bspr->bsp->position_to_leaf( pos ).cluster;
 
 	if( cluster == -1 ) {
 		for( u32 i = 0; i < bspr->bsp->num_leaves; i++ ) {
-			bspr_render_leaf( bspr, i );
+			bspr_render_leaf( renderer, bspr, i );
 		}
 
 		return;
@@ -162,7 +162,7 @@ void bspr_render( const BSPRenderer * const bspr, const glm::vec3 & pos ) {
 		const s32 pvs_idx = cluster * bspr->bsp->vis->cluster_size + other_cluster / 8;
 
 		if( bspr->bsp->vis->pvs[ pvs_idx ] & ( 1 << other_cluster % 8 ) ) {
-			bspr_render_leaf( bspr, i );
+			bspr_render_leaf( renderer, bspr, i );
 		}
 	}
 }

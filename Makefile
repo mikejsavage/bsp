@@ -1,13 +1,13 @@
 all: medfall bsp.so hm.so pp btt.so
 
-MAINOBJS = main.o gl.o memory_arena.o
-BSPOBJS = bsp.o bsp_renderer.o memory_arena.o immediate.o
+MAINOBJS = main.o gl.o memory_arena.o renderer.o
+BSPOBJS = bsp.o bsp_renderer.o memory_arena.o immediate.o renderer.o
 HMOBJS = hm.o heightmap.o terrain_manager.o memory_arena.o work_queue.o immediate.o stb_truetype.o stb_image.o stb_perlin.o
 PPOBJS = pp.o stb_image.o stb_image_write.o
 
 WARNINGS = -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-write-strings -Wno-char-subscripts
-CXXFLAGS += -std=c++11 -O2 -pthread -ggdb3 $(WARNINGS) -DGL_GLEXT_PROTOTYPES -DGLFW_INCLUDE_NONE
-LDFLAGS += -lm
+CXXFLAGS += -std=c++11 -O2 -ggdb3 $(WARNINGS) -DGL_GLEXT_PROTOTYPES -DGLFW_INCLUDE_NONE
+LDFLAGS += -lm -lpthread
 
 # OS detection
 ifneq ($(shell uname -s),Darwin)

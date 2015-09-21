@@ -312,7 +312,8 @@ extern "C" GAME_INIT( game_init ) {
 	state->test_at_colour = glGetAttribLocation( state->test_shader, "colour" );
 	state->test_un_VP = glGetUniformLocation( state->test_shader, "VP" );
 
-	bspr_init( &state->bspr, &arena, &state->bsp, state->test_at_position, state->test_at_colour );
+	bspr_init( &state->bspr, &arena, &state->bsp,
+		state->test_shader, state->test_at_position, state->test_at_colour );
 }
 
 extern "C" GAME_FRAME( game_frame ) {
@@ -349,25 +350,25 @@ extern "C" GAME_FRAME( game_frame ) {
 	glUseProgram( state->test_shader );
 	glUniformMatrix4fv( state->test_un_VP, 1, GL_FALSE, glm::value_ptr( VP ) );
 
-	bspr_render( &state->bspr, state->pos );
+	bspr_render( renderer, &state->bspr, state->pos );
 
-	immediate_init( &imm, triangles, array_count( triangles ) );
-	immediate_sphere( &imm, glm::vec3( 0, 0, 0 ), 128, glm::vec4( 1, 1, 0, 1 ) );
-
-	if( input->keys[ 't' ] ) {
-		fix = true;
-		fix_start = state->pos;
-		fix_end = fix_start + forward * 1000.0f;
-	}
-
-	if( fix ) {
-		Intersection is;
-		bool hit = state->bspr.bsp->trace_seg( fix_start, fix_end, is );
-
-		if( hit ) {
-			immediate_sphere( &imm, is.pos, 16, glm::vec4( 1, 0, 0, 1 ) );
-		}
-	}
-
-	immediate_render( &imm, state->test_at_position, state->test_at_colour );
+	// immediate_init( &imm, triangles, array_count( triangles ) );
+	// immediate_sphere( &imm, glm::vec3( 0, 0, 0 ), 128, glm::vec4( 1, 1, 0, 1 ) );
+        //
+	// if( input->keys[ 't' ] ) {
+	// 	fix = true;
+	// 	fix_start = state->pos;
+	// 	fix_end = fix_start + forward * 1000.0f;
+	// }
+        //
+	// if( fix ) {
+	// 	Intersection is;
+	// 	bool hit = state->bspr.bsp->trace_seg( fix_start, fix_end, is );
+        //
+	// 	if( hit ) {
+	// 		immediate_sphere( &imm, is.pos, 16, glm::vec4( 1, 0, 0, 1 ) );
+	// 	}
+	// }
+        //
+	// immediate_render( &imm, state->test_at_position, state->test_at_colour );
 }

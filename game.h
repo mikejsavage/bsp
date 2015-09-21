@@ -77,6 +77,7 @@
 #include "btt.h"
 #include "gpubtt.h"
 #include "heightmap.h"
+#include "renderer.h"
 #include "bsp.h"
 #include "bsp_renderer.h"
 #include "immediate.h"
@@ -137,7 +138,7 @@ struct GameInput {
 #define GAME_INIT( name ) void name( GameState * const state, GameMemory * const mem )
 typedef GAME_INIT( GameInit );
 
-#define GAME_FRAME( name ) void name( GameState * const state, GameMemory * const mem, const GameInput * const input, const float dt )
+#define GAME_FRAME( name ) void name( GameState * const state, GameMemory * const mem, const GameInput * const input, const float dt, Renderer * const renderer )
 typedef GAME_FRAME( GameFrame );
 
 #endif // _GAME_H_
