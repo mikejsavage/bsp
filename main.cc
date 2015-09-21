@@ -21,7 +21,7 @@ struct Game {
 	time_t lib_write_time;
 };
 
-time_t file_last_write_time( const char * const path ) {
+static time_t file_last_write_time( const char * const path ) {
 	struct stat buf;
 	if( stat( path, &buf ) == -1 ) {
 		return 0;
@@ -30,7 +30,7 @@ time_t file_last_write_time( const char * const path ) {
 	return buf.st_mtime;
 }
 
-Game load_game( const char * const path ) {
+static Game load_game( const char * const path ) {
 	Game game = { };
 
 	game.lib = dlopen( path, RTLD_NOW );
@@ -56,7 +56,7 @@ Game load_game( const char * const path ) {
 	return game;
 }
 
-void unload_game( Game * game ) {
+static void unload_game( Game * game ) {
 	if( game->lib ) {
 		dlclose( game->lib );
 	}
@@ -65,7 +65,7 @@ void unload_game( Game * game ) {
 	game->frame = nullptr;
 }
 
-bool should_reload_game( const char * const path, const time_t lib_write_time ) {
+static bool should_reload_game( const char * const path, const time_t lib_write_time ) {
 	return file_last_write_time( path ) > lib_write_time;
 }
 
