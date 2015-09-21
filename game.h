@@ -14,7 +14,9 @@
 // rendering
 // 	textures - easy/medium
 // 	unify the renderers - hard
-// 	multithreading - medium
+// 	multithreading - hard++
+// 		need to do glGenBuffers etc on the same thread. this needs some more thought
+// 		see multithreaded_renderer branch
 // 	particles - medium
 // 	fonts - medium/hard
 // 	ui - medium/hard
