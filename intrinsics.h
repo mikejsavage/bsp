@@ -58,7 +58,7 @@ inline void mike_assert( const bool predicate, const char * const message ) {
 
 #define STRINGIFY_HELPER( x ) #x
 #define STRINGIFY( x ) STRINGIFY_HELPER( x )
-#define assert( predicate ) mike_assert( predicate, "assertion failed at " __FILE__ " line " STRINGIFY( __LINE__ ) ": " #predicate )
+#define assert( predicate ) mike_assert( predicate, "\e[1;31massertion failed at " __FILE__ " line " STRINGIFY( __LINE__ ) ": \e[0;1m" #predicate "\e[0m" )
 
 // TODO: this sucks
 inline u8 * file_get_contents( const char * const path, size_t * const out_len = nullptr ) {
