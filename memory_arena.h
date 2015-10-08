@@ -16,6 +16,14 @@ struct MemoryArenaCheckpoint {
 	bool restored;
 };
 
+struct MemoryArenaAutoCheckpoint {
+	MemoryArena * arena;
+	MemoryArenaCheckpoint cp;
+
+	MemoryArenaAutoCheckpoint( MemoryArena * arena, MemoryArenaCheckpoint cp );
+	~MemoryArenaAutoCheckpoint();
+};
+
 void memarena_init( MemoryArena * const arena, u8 * const memory, const size_t size );
 
 u8 * memarena_push_size( MemoryArena * const arena, const size_t size, const size_t alignment = sizeof( void * ) );
@@ -28,5 +36,8 @@ void memarena_clear( MemoryArena * const arena );
 
 MemoryArenaCheckpoint memarena_checkpoint( MemoryArena * const arena );
 void memarena_restore( MemoryArena * arena, MemoryArenaCheckpoint * const cp );
+
+#define MEMARENA_SCOPED_CHECKPOINT( arena ) MemoryArenaAutoCheckpoint mem_cp##__COUNTER__( arena, memarena_checkpoint( arena ) );
+
 
 #endif // _MEMORY_ARENA_H_

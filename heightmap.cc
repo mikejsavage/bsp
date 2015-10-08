@@ -54,7 +54,7 @@ void heightmap_init(
 	hm->width = width;
 	hm->height = height;
 
-	MemoryArenaCheckpoint cp = memarena_checkpoint( mem );
+	MEMARENA_SCOPED_CHECKPOINT( mem );
 
 	GLfloat * const vertices = memarena_push_many( mem, GLfloat, width * height * 3 );
 	GLfloat * const normals = memarena_push_many( mem, GLfloat, width * height * 3 );
@@ -153,8 +153,6 @@ void heightmap_init(
 	glBufferData( GL_ELEMENT_ARRAY_BUFFER, width * height * sizeof( GLuint ) * 6, indices, GL_STATIC_DRAW );
 
 	glBindVertexArray( 0 );
-
-	memarena_restore( mem, &cp );
 }
 
 void heightmap_destroy( Heightmap * const hm ) {

@@ -47,7 +47,7 @@ void gpubtt_init(
 	const OffsetHeightmap * const ohm, const BTTs btts,
 	const GLuint at_position
 ) {
-	MemoryArenaCheckpoint cp = memarena_checkpoint( mem );
+	MEMARENA_SCOPED_CHECKPOINT( mem );
 
 	const u32 num_leaves = btt_count_leaves( btts.left_root )
 		+ btt_count_leaves( btts.right_root );
@@ -70,8 +70,6 @@ void gpubtt_init(
 	glBindVertexArray( 0 );
 
 	gpubtt->num_verts = i;
-
-	memarena_restore( mem, &cp );
 }
 
 void gpubtt_destroy( GPUBTT * const gpubtt ) {

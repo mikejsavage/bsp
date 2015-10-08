@@ -50,3 +50,12 @@ void memarena_restore( MemoryArena * arena, MemoryArenaCheckpoint * const cp ) {
 	arena->num_checkpoints--;
 	cp->restored = true;
 }
+
+MemoryArenaAutoCheckpoint::MemoryArenaAutoCheckpoint( MemoryArena * arena, MemoryArenaCheckpoint cp ) {
+	this->arena = arena;
+	this->cp = cp;
+}
+
+MemoryArenaAutoCheckpoint::~MemoryArenaAutoCheckpoint() {
+	memarena_restore( arena, &cp );
+}

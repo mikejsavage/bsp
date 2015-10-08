@@ -58,7 +58,8 @@ void workqueue_init( WorkQueue * const queue, MemoryArena * const arena, const u
 		queue->arenas[ i ] = memarena_push_arena( arena, megabytes( 1 ) );
 	}
 
-	MemoryArenaCheckpoint cp = memarena_checkpoint( arena );
+	MEMARENA_SCOPED_CHECKPOINT( arena );
+
 	ThreadInfo * infos = memarena_push_many( arena, ThreadInfo, num_threads );
 	volatile u32 started_threads = 0;
 
@@ -71,8 +72,6 @@ void workqueue_init( WorkQueue * const queue, MemoryArena * const arena, const u
 
 	// wait until all threads have a local copy of ThreadInfo
 	while( started_threads < num_threads );
-
-	memarena_restore( arena, &cp );
 }
 
 void workqueue_enqueue( WorkQueue * const queue, WorkQueueCallback * const callback, void * const data ) {
