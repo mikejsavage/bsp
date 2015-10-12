@@ -1,8 +1,12 @@
 all: medfall bsp.so hm.so pp btt.so
 
 MAINOBJS = main.o gl.o memory_arena.o
-BSPOBJS = bsp.o bsp_renderer.o memory_arena.o immediate.o
-HMOBJS = hm.o heightmap.o terrain_manager.o memory_arena.o work_queue.o immediate.o stb_truetype.o stb_image.o stb_perlin.o
+
+COMMONOBJS = memory_arena.o work_queue.o immediate.o stb_truetype.o stb_image.o
+BSPOBJS = bsp.o bsp_renderer.o
+HMOBJS = hm.o heightmap.o terrain_manager.o stb_perlin.o
+BTTOBJS = btt.o heightmap.o gpubtt.o
+
 PPOBJS = pp.o stb_image.o stb_image_write.o
 
 WARNINGS = -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wno-write-strings -Wno-char-subscripts
@@ -23,17 +27,17 @@ picky: all
 medfall: $(MAINOBJS)
 	$(CXX) $^ $(LDFLAGS) -o $@
 
-hm.so: $(HMOBJS)
+hm.so: $(COMMONOBJS) $(HMOBJS)
 	$(CXX) $^ $(LDFLAGS) -o $@ -shared
 
-bsp.so: $(BSPOBJS)
+bsp.so: $(COMMONOBJS) $(BSPOBJS)
+	$(CXX) $^ $(LDFLAGS) -o $@ -shared
+
+btt.so: $(COMMONOBJS) $(BTTOBJS)
 	$(CXX) $^ $(LDFLAGS) -o $@ -shared
 
 pp: $(PPOBJS)
 	$(CXX) $^ $(LDFLAGS) -o $@
-
-btt.so: btt.o heightmap.o memory_arena.o work_queue.o stb_image.o immediate.o gpubtt.o
-	$(CXX) $^ $(LDFLAGS) -o $@ -shared
 
 clean:
 	rm -f medfall bsp.so hm.so pp *.o
