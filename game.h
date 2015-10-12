@@ -111,6 +111,8 @@ struct GameState {
 	GLint test_at_normal;
 	GLint test_at_lit;
 	GLint test_un_sun;
+	GLint test_un_normals;
+	GLint test_un_dimensions;
 
 	GLuint test_outline_shader;
 	GLint test_outline_at_position;

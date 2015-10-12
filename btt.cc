@@ -15,7 +15,6 @@ static ImmediateContext imm;
 
 static const GLchar * const vert_src = GLSL(
 	in vec3 position;
-	in vec3 normal;
 	in float lit;
 
 	out vec3 n;
@@ -23,10 +22,12 @@ static const GLchar * const vert_src = GLSL(
 	out float l;
 
 	uniform mat4 vp;
+	uniform sampler2D normals;
+	uniform vec2 dimensions;
 
 	void main() {
-		n = normal;
-		l = lit;
+		n = texture( normals, position.xy / dimensions ).xyz;
+		l = lit + 1.0f;
 		gl_Position = vp * vec4( position, 1.0 );
 		depth = gl_Position.z;
 	}
@@ -42,15 +43,17 @@ static const GLchar * frag_src = GLSL(
 	uniform vec3 sun;
 
 	void main() {
+		vec3 normal = normalize( n );
+
 		vec3 ground;
-		if( n.z > 0.9 ) {
+		if( normal.z > 0.9 ) {
 			ground = vec3( 0.4, 1.0, 0.4 );
 		}
 		else {
 			ground = vec3( 0.7, 0.7, 0.5 );
 		}
 
-		float d = max( 0, -dot( n, sun ) );
+		float d = max( 0, -dot( normal, sun ) );
 		float light = max( 0.2, l * d );
 
 		vec3 fog = vec3( 0.6, 0.6, 0.6 );
@@ -217,10 +220,11 @@ extern "C" GAME_INIT( game_init ) {
 
 	state->test_shader = compile_shader( vert_src, frag_src, "screen_colour" );
 	state->test_at_position = glGetAttribLocation( state->test_shader, "position" );
-	state->test_at_normal = glGetAttribLocation( state->test_shader, "normal" );
 	state->test_at_lit = glGetAttribLocation( state->test_shader, "lit" );
 	state->test_un_VP = glGetUniformLocation( state->test_shader, "vp" );
 	state->test_un_sun = glGetUniformLocation( state->test_shader, "sun" );
+	state->test_un_normals = glGetUniformLocation( state->test_shader, "normals" );
+	state->test_un_dimensions = glGetUniformLocation( state->test_shader, "dimensions" );
 
 	state->test_outline_shader = compile_shader( vert_outline_src, frag_outline_src, "screen_colour" );
 	state->test_outline_at_position = glGetAttribLocation( state->test_outline_shader, "position" );
@@ -307,7 +311,8 @@ extern "C" GAME_FRAME( game_frame ) {
 	glUseProgram( state->test_shader );
 	glUniformMatrix4fv( state->test_un_VP, 1, GL_FALSE, glm::value_ptr( VP ) );
 	glUniform3fv( state->test_un_sun, 1, glm::value_ptr( sun ) );
-	gpubtt_render( &state->gpubtt );
+	glUniform2f( state->test_un_dimensions, state->hm.width, state->hm.height );
+	gpubtt_render( &state->gpubtt, state->test_un_normals );
 	glUseProgram( 0 );
 
 	immediate_init( &imm, triangles, array_count( triangles ) );

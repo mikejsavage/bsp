@@ -67,18 +67,40 @@ void gpubtt_init(
 	glEnableVertexAttribArray( at_position );
 	glVertexAttribPointer( at_position, 3, GL_FLOAT, GL_FALSE, 0, 0 );
 
+	glm::vec3 * const normals = memarena_push_many( mem, glm::vec3, ohm->hm.width * ohm->hm.height );
+
+	for( u32 y = 0; y < ohm->hm.height; y++ ) {
+		for( u32 x = 0; x < ohm->hm.width; x++ ) {
+			const glm::vec3 normal = ohm->hm.point_normal( x, y );
+			normals[ y * ohm->hm.width + x ] = normal;
+		}
+	}
+
+	glGenTextures( 1, &gpubtt->tex_normals );
+	glBindTexture( GL_TEXTURE_2D, gpubtt->tex_normals );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, ohm->hm.width, ohm->hm.height, 0, GL_RGB, GL_FLOAT, normals );
+
 	glBindVertexArray( 0 );
 
 	gpubtt->num_verts = i;
 }
 
 void gpubtt_destroy( GPUBTT * const gpubtt ) {
+	glDeleteTextures( 1, &gpubtt->tex_normals );
 	glDeleteBuffers( 1, &gpubtt->vbo_verts );
 	glDeleteVertexArrays( 1, &gpubtt->vao );
 }
 
-void gpubtt_render( const GPUBTT * const gpubtt ) {
+void gpubtt_render( const GPUBTT * const gpubtt, const GLuint un_normals ) {
 	glBindVertexArray( gpubtt->vao );
+
+	glActiveTexture( GL_TEXTURE0 );
+	glBindTexture( GL_TEXTURE_2D, gpubtt->tex_normals );
+	glUniform1i( un_normals, 0 );
+
 	glDrawArrays( GL_TRIANGLES, 0, gpubtt->num_verts * 3 );
+
 	glBindVertexArray( 0 );
 }
