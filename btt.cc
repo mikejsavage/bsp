@@ -15,35 +15,31 @@ static ImmediateContext imm;
 
 static const GLchar * const vert_src = GLSL(
 	in vec3 position;
-	in float lit;
 
-	out vec3 n;
+	out vec3 smooth_position;
 	out float depth;
-	out float l;
 
 	uniform mat4 vp;
-	uniform sampler2D normals;
-	uniform vec2 dimensions;
 
 	void main() {
-		n = texture( normals, position.xy / dimensions ).xyz;
-		l = lit + 1.0f;
 		gl_Position = vp * vec4( position, 1.0 );
+		smooth_position = position;
 		depth = gl_Position.z;
 	}
 );
 
 static const GLchar * frag_src = GLSL(
-	in vec3 n;
+	in vec3 smooth_position;
 	in float depth;
-	in float l;
 
 	out vec4 colour;
 
 	uniform vec3 sun;
+	uniform sampler2D normals;
+	uniform vec2 dimensions;
 
 	void main() {
-		vec3 normal = normalize( n );
+		vec3 normal = normalize( texture( normals, smooth_position.xy / dimensions ).xyz );
 
 		vec3 ground;
 		if( normal.z > 0.9 ) {
@@ -54,7 +50,7 @@ static const GLchar * frag_src = GLSL(
 		}
 
 		float d = max( 0, -dot( normal, sun ) );
-		float light = max( 0.2, l * d );
+		float light = max( 0.2, 1 * d );
 
 		vec3 fog = vec3( 0.6, 0.6, 0.6 );
 
@@ -220,7 +216,6 @@ extern "C" GAME_INIT( game_init ) {
 
 	state->test_shader = compile_shader( vert_src, frag_src, "screen_colour" );
 	state->test_at_position = glGetAttribLocation( state->test_shader, "position" );
-	state->test_at_lit = glGetAttribLocation( state->test_shader, "lit" );
 	state->test_un_VP = glGetUniformLocation( state->test_shader, "vp" );
 	state->test_un_sun = glGetUniformLocation( state->test_shader, "sun" );
 	state->test_un_normals = glGetUniformLocation( state->test_shader, "normals" );
