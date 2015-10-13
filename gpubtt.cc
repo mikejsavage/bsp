@@ -80,7 +80,7 @@ void gpubtt_init(
 	glBindTexture( GL_TEXTURE_2D, gpubtt->tex_normals );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, ohm->hm.width, ohm->hm.height, 0, GL_RGB, GL_FLOAT, normals );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB32F, ohm->hm.width, ohm->hm.height, 0, GL_RGB, GL_FLOAT, normals );
 
 	glBindVertexArray( 0 );
 
