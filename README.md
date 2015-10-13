@@ -1,6 +1,7 @@
 ![BSP renderer](screenshots/bsp.png)
 ![Terrain renderer](screenshots/hm.png)
 ![Terrain paging](screenshots/tiles.png)
+![Binary Triangle Tree renderer](screenshots/btt.png)
 
 OpenGL 3.2 support:
 
