@@ -10,6 +10,7 @@ struct GPUBTT {
 	GLuint vao;
 	GLuint vbo_verts;
 	GLuint tex_normals;
+	GLuint tex_horizons;
 	u32 num_verts;
 };
 

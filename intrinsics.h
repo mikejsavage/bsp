@@ -42,6 +42,10 @@ inline size_t gigabytes( const size_t gb ) {
 	return megabytes( gb ) * 1024;
 }
 
+inline u32 max_u32( u32 a, u32 b ) {
+	return a > b ? a : b;
+}
+
 #include "platform_backtrace.h"
 
 #ifdef assert

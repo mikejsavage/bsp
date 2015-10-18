@@ -34,8 +34,9 @@ static const GLchar * frag_src = GLSL(
 
 	out vec4 colour;
 
-	uniform vec3 sun;
+	uniform float sun;
 	uniform sampler2D normals;
+	uniform sampler2D horizons;
 	uniform vec2 dimensions;
 
 	void main() {
@@ -49,8 +50,11 @@ static const GLchar * frag_src = GLSL(
 			ground = vec3( 0.7, 0.7, 0.5 );
 		}
 
-		float d = max( 0, -dot( normal, sun ) );
-		float light = max( 0.2, 1 * d );
+		vec3 sunv = normalize( vec3( 1, 1, -sun ) );
+		float l = sun > texture( horizons, smooth_position.xy / dimensions ).x ? 1.0 : 0.0;
+
+		float d = max( 0, -dot( normal, sunv ) );
+		float light = max( 0.2, l * d );
 
 		vec3 fog = vec3( 0.6, 0.6, 0.6 );
 
@@ -214,6 +218,8 @@ extern "C" GAME_INIT( game_init ) {
 	state->pos = glm::vec3( 100, 100, 50 );
 	state->angles = glm::radians( glm::vec3( -90, 45, 0 ) );
 
+	state->test_sun = 0.3f;
+
 	state->test_shader = compile_shader( vert_src, frag_src, "screen_colour" );
 	state->test_at_position = glGetAttribLocation( state->test_shader, "position" );
 	state->test_un_VP = glGetUniformLocation( state->test_shader, "vp" );
@@ -275,6 +281,9 @@ extern "C" GAME_FRAME( game_frame ) {
 	const int lr = input->keys[ 'a' ] - input->keys[ 'd' ];
 	const int dz = input->keys[ KEY_SPACE ] - input->keys[ KEY_LEFTSHIFT ];
 
+	const float dsun = ( input->keys[ KEY_EQUALS ] - input->keys[ KEY_MINUS ] ) * dt;
+	state->test_sun += dsun;
+
 	const int pitch = input->keys[ KEY_UPARROW ] - input->keys[ KEY_DOWNARROW ];
 	const int yaw = input->keys[ KEY_RIGHTARROW ] - input->keys[ KEY_LEFTARROW ];
 
@@ -305,7 +314,7 @@ extern "C" GAME_FRAME( game_frame ) {
 	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 	glUseProgram( state->test_shader );
 	glUniformMatrix4fv( state->test_un_VP, 1, GL_FALSE, glm::value_ptr( VP ) );
-	glUniform3fv( state->test_un_sun, 1, glm::value_ptr( sun ) );
+	glUniform1f( state->test_un_sun, state->test_sun );
 	glUniform2f( state->test_un_dimensions, state->hm.width, state->hm.height );
 	gpubtt_render( &state->gpubtt, state->test_un_normals );
 	glUseProgram( 0 );

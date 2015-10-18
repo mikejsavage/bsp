@@ -42,6 +42,47 @@ static void gpubtt_build(
 	}
 }
 
+static float angle( glm::vec3 a, glm::vec3 b ) {
+	const glm::vec3 d = b - a;
+
+	const float dist_xy = sqrtf( d.x * d.x + d.y * d.y );
+
+	return d.z / dist_xy;
+}
+
+void compute_horizons(
+	MemoryArena * arena,
+	const Heightmap * hm, float * horizons,
+	glm::ivec2 start, glm::ivec2 step
+) {
+	MEMARENA_SCOPED_CHECKPOINT( arena );
+
+	const u32 max_hull_size = 2 * max_u32( hm->width, hm->height );
+
+	glm::vec3 * hull = memarena_push_many( arena, glm::vec3, max_hull_size );
+	u32 hull_size = 1;
+
+	hull[ 0 ] = hm->point( start.x, start.y );
+	horizons[ 0 ] = 0;
+
+	start += step;
+
+	while( ( u32 ) start.x < hm->width && ( u32 ) start.y < hm->height && start.x >= 0 && start.y >= 0 ) {
+		const glm::vec3 p = hm->point( start.x, start.y );
+
+		while( hull_size > 1 && angle( p, hull[ hull_size - 1 ] ) < angle( hull[ hull_size - 1 ], hull[ hull_size - 2 ] ) ) {
+			hull_size--;
+		}
+
+		horizons[ start.y * hm->width + start.x ] = angle( p, hull[ hull_size - 1 ] );
+
+		hull[ hull_size ] = p;
+		hull_size++;
+
+		start += step;
+	}
+}
+
 void gpubtt_init(
 	MemoryArena * const arena, GPUBTT * const gpubtt,
 	const OffsetHeightmap * const ohm, const BTTs btts,
@@ -87,6 +128,18 @@ void gpubtt_init(
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB32F, ohm->hm.width, ohm->hm.height, 0, GL_RGB, GL_FLOAT, normals );
+
+	float * const horizons = memarena_push_many( arena, float, ohm->hm.width * ohm->hm.height );
+
+	for( u32 i = 0; i < ohm->hm.height; i++ ) {
+		compute_horizons( arena, &ohm->hm, horizons, glm::ivec2( 0, i ), glm::ivec2( 1, 0 ) );
+	}
+
+	glGenTextures( 1, &gpubtt->tex_horizons );
+	glBindTexture( GL_TEXTURE_2D, gpubtt->tex_horizons );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_R32F, ohm->hm.width, ohm->hm.height, 0, GL_RED, GL_FLOAT, horizons );
 
 	glBindVertexArray( 0 );
 

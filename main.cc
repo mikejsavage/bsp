@@ -120,6 +120,10 @@ int main( int argc, char ** argv ) {
 		input.keys[ KEY_DOWNARROW ] = glfwGetKey( window, GLFW_KEY_DOWN );
 		input.keys[ KEY_LEFTARROW ] = glfwGetKey( window, GLFW_KEY_LEFT );
 		input.keys[ KEY_RIGHTARROW ] = glfwGetKey( window, GLFW_KEY_RIGHT );
+		input.keys[ KEY_LEFTARROW ] = glfwGetKey( window, GLFW_KEY_LEFT );
+		input.keys[ KEY_RIGHTARROW ] = glfwGetKey( window, GLFW_KEY_RIGHT );
+		input.keys[ KEY_MINUS ] = glfwGetKey( window, GLFW_KEY_MINUS );
+		input.keys[ KEY_EQUALS ] = glfwGetKey( window, GLFW_KEY_EQUAL );
 
 		if( game.frame ) {
 			game.frame( state, &mem, &input, dt );

@@ -119,6 +119,8 @@ struct GameState {
 	GLint test_outline_at_colour;
 	GLint test_outline_un_vp;
 
+	float test_sun;
+
 	BTTs btt;
 	GPUBTT gpubtt;
 	Heightmap hm;
