@@ -13,7 +13,7 @@ struct GPUBTT {
 	u32 num_verts;
 };
 
-void gpubtt_init( MemoryArena * const mem, GPUBTT * const gpubtt,
+void gpubtt_init( MemoryArena * const arena, GPUBTT * const gpubtt,
 	const OffsetHeightmap * const ohm, const BTTs btts,
 	const GLuint at_position );
 

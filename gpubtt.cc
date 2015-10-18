@@ -43,20 +43,26 @@ static void gpubtt_build(
 }
 
 void gpubtt_init(
-	MemoryArena * const mem, GPUBTT * const gpubtt,
+	MemoryArena * const arena, GPUBTT * const gpubtt,
 	const OffsetHeightmap * const ohm, const BTTs btts,
 	const GLuint at_position
 ) {
-	MEMARENA_SCOPED_CHECKPOINT( mem );
+	MEMARENA_SCOPED_CHECKPOINT( arena );
 
 	const u32 num_leaves = btt_count_leaves( btts.left_root )
 		+ btt_count_leaves( btts.right_root );
 
-	glm::vec3 * const verts = memarena_push_many( mem, glm::vec3, num_leaves * 3 );
+	glm::vec3 * const verts = memarena_push_many( arena, glm::vec3, num_leaves * 3 );
 	u32 i = 0;
 
-	gpubtt_build( verts, &i, ohm, btts.left_root, glm::ivec2( 0, 0 ), glm::ivec2( 0, ohm->hm.height - 1 ), glm::ivec2( ohm->hm.width - 1, ohm->hm.height - 1 ) );
-	gpubtt_build( verts, &i, ohm, btts.right_root, glm::ivec2( ohm->hm.width - 1, ohm->hm.height - 1 ), glm::ivec2( ohm->hm.width - 1, 0 ), glm::ivec2( 0, 0 ) );
+	// bottom left, bottom right, top left, top right
+	const glm::ivec2 bl( 0, 0 );
+	const glm::ivec2 br( ohm->hm.width - 1, 0 );
+	const glm::ivec2 tl( 0, ohm->hm.height - 1 );
+	const glm::ivec2 tr( ohm->hm.width - 1, ohm->hm.height - 1 );
+
+	gpubtt_build( verts, &i, ohm, btts.left_root, bl, tl, tr );
+	gpubtt_build( verts, &i, ohm, btts.right_root, tr, br, bl );
 
 	glGenVertexArrays( 1, &gpubtt->vao );
 	glBindVertexArray( gpubtt->vao );
@@ -67,7 +73,7 @@ void gpubtt_init(
 	glEnableVertexAttribArray( at_position );
 	glVertexAttribPointer( at_position, 3, GL_FLOAT, GL_FALSE, 0, 0 );
 
-	glm::vec3 * const normals = memarena_push_many( mem, glm::vec3, ohm->hm.width * ohm->hm.height );
+	glm::vec3 * const normals = memarena_push_many( arena, glm::vec3, ohm->hm.width * ohm->hm.height );
 
 	for( u32 y = 0; y < ohm->hm.height; y++ ) {
 		for( u32 x = 0; x < ohm->hm.width; x++ ) {

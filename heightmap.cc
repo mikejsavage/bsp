@@ -45,7 +45,7 @@ static glm::vec3 triangle_perp_ccw( const glm::vec3 & a, const glm::vec3 & b, co
 }
 
 void heightmap_init(
-	Heightmap * const hm, MemoryArena * const mem,
+	Heightmap * const hm, MemoryArena * const arena,
 	u8 * const pixels, const u32 width, const u32 height,
 	const float ox, const float oy,
 	const GLint at_pos, const GLint at_normal, const GLint at_lit
@@ -54,12 +54,12 @@ void heightmap_init(
 	hm->width = width;
 	hm->height = height;
 
-	MEMARENA_SCOPED_CHECKPOINT( mem );
+	MEMARENA_SCOPED_CHECKPOINT( arena );
 
-	GLfloat * const vertices = memarena_push_many( mem, GLfloat, width * height * 3 );
-	GLfloat * const normals = memarena_push_many( mem, GLfloat, width * height * 3 );
-	GLuint * const indices = memarena_push_many( mem, GLuint, width * height * 6 );
-	GLfloat * const lit = memarena_push_many( mem, GLfloat, width * height );
+	GLfloat * const vertices = memarena_push_many( arena, GLfloat, width * height * 3 );
+	GLfloat * const normals = memarena_push_many( arena, GLfloat, width * height * 3 );
+	GLuint * const indices = memarena_push_many( arena, GLuint, width * height * 6 );
+	GLfloat * const lit = memarena_push_many( arena, GLfloat, width * height );
 
 	for( u32 i = 0; i < width * height; i++ ) {
 		lit[ i ] = 0;

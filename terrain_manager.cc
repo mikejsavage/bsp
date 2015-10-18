@@ -80,19 +80,19 @@ static void terrain_load_tile(
 
 	if( !pixels ) err( 1, "stbi_load failed (%s)", stbi_failure_reason() );
 
-	heightmap_init( hm, tm->mem, pixels, width, height,
+	heightmap_init( hm, tm->arena, pixels, width, height,
 		tx * TILE_SIZE, ty * TILE_SIZE,
 		tm->at_pos, tm->at_normal, tm->at_lit );
 }
 
 void terrain_init(
 	TerrainManager * const tm, const char * const tiles_dir,
-	MemoryArena * const mem
+	MemoryArena * const arena
 ) {
 	assert( strlen( tiles_dir ) < array_count( tm->dir ) );
 	strcpy( tm->dir, tiles_dir );
 
-	tm->mem = mem;
+	tm->arena = arena;
 
 	char dims_path[ 256 ];
 	sprintf( dims_path, "%s/dims.txt", tm->dir );
