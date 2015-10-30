@@ -1,4 +1,5 @@
 #include <string.h>
+#include <err.h>
 
 #include "platform_opengl.h"
 #include <glm/glm.hpp>
