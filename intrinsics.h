@@ -23,6 +23,7 @@ typedef double f64;
 #define is_power_of_2( n ) ( ( ( n ) & ( ( n ) - 1 ) ) == 0 )
 
 #define align_power_of_2( n, alignment ) ( ( ( n ) + ( alignment ) - 1 ) & ~( ( alignment ) - 1 ) )
+#define align2( n ) align_power_of_2( n, 4 )
 #define align4( n ) align_power_of_2( n, 4 )
 #define align8( n ) align_power_of_2( n, 8 )
 #define align16( n ) align_power_of_2( n, 16 )
@@ -30,16 +31,20 @@ typedef double f64;
 // TODO: clashes with some crap in std::string
 #define align_TODO( n, alignment ) ( ( ( n ) + ( alignment ) - 1 ) / ( alignment ) * ( alignment ) )
 
-inline size_t kilobytes( const size_t kb ) {
+inline constexpr size_t kilobytes( const size_t kb ) {
 	return kb * 1024;
 }
 
-inline size_t megabytes( const size_t mb ) {
+inline constexpr size_t megabytes( const size_t mb ) {
 	return kilobytes( mb ) * 1024;
 }
 
-inline size_t gigabytes( const size_t gb ) {
+inline constexpr size_t gigabytes( const size_t gb ) {
 	return megabytes( gb ) * 1024;
+}
+
+inline u32 min_u32( u32 a, u32 b ) {
+	return a < b ? a : b;
 }
 
 inline u32 max_u32( u32 a, u32 b ) {
