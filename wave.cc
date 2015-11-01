@@ -49,7 +49,7 @@ bool wave_decode( MemoryArena * arena, u8 * data, Sound * sound ) {
 	}
 
 	u32 pos = sizeof( WaveHeader );
-	u32 data_length;
+	u32 data_length = 0;
 
 	while( pos < header->length ) {
 		WaveChunk * chunk = ( WaveChunk * ) ( data + pos );
