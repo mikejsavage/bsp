@@ -13,6 +13,10 @@ enum WaveID {
 	WAVEID_data = WAVEID( 'd', 'a', 't', 'a' ),
 };
 
+enum WaveFormat {
+	WAVEFORMAT_PCM = 1,
+};
+
 struct WaveHeader {
 	u32 id_riff;
 	u32 length;
@@ -56,7 +60,11 @@ bool wave_decode( MemoryArena * arena, u8 * data, Sound * sound ) {
 
 				WaveFMT * fmt = ( WaveFMT * ) chunk;
 
-				if( ( fmt->num_channels != 1 && fmt->num_channels != 2 ) || fmt->bits_per_sample != 16 ) {
+				if(
+					fmt->format != WAVEFORMAT_PCM
+					|| ( fmt->num_channels != 1 && fmt->num_channels != 2 )
+					|| fmt->bits_per_sample != 16
+				) {
 					return false;
 				}
 
