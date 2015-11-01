@@ -1,5 +1,6 @@
 #include "intrinsics.h"
 #include "memory_arena.h"
+#include "assets.h"
 #include "wave.h"
 
 // TODO: this only works on a little endian machine

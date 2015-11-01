@@ -25,7 +25,10 @@ struct Bitmap {
 
 struct Sound {
 	u32 num_samples;
-	u8 * data;
+	u32 sample_rate;
+	u32 num_channels;
+
+	s16 * samples;
 };
 
 struct Asset {
