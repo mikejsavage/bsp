@@ -8,13 +8,11 @@
 
 #define FRAMES 1024
 
-short buffer[ FRAMES ][ 2 ]; // stereo
-
-int milliseconds( int ms ) {
+static int milliseconds( int ms ) {
 	return ms * 1000;
 }
 
-void error_handler( const char * file, int line, const char * function, int err, const char * fmt, ... ) {
+static void error_handler( const char * file, int line, const char * function, int err, const char * fmt, ... ) {
 	printf( "error in %s at %s:%d\n", file, function, line );
 
 	va_list args;
@@ -24,7 +22,7 @@ void error_handler( const char * file, int line, const char * function, int err,
 	printf( "\n" );
 }
 
-u8 memory[ megabytes( 64 ) ];
+static u8 memory[ megabytes( 64 ) ];
 int main( int argc, char ** argv ) {
 	snd_lib_error_set_handler( error_handler );
 
@@ -62,11 +60,6 @@ int main( int argc, char ** argv ) {
 	// snd_output_t *log;
 	// if (snd_output_stdio_attach(&log, stderr, 0) >= 0) {
 	// 	snd_pcm_dump(pcm, log); snd_output_close(log); }
-
-	// for( int i = 0; i < FRAMES; i++ ) {
-	// 	buffer[i][0] = 16384*sin(2*M_PI*i/128) + 6553*sin(4*M_PI*i/128);
-	// 	buffer[i][1] = 0;
-	// }
 
 	for( u32 i = 0; i < sound.num_samples; ) {
 		s16 * channels[ 2 ] = { sound.samples + i, sound.samples + sound.num_samples + i };
