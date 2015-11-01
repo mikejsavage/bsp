@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <assert.h>
 #include <alsa/asoundlib.h>
 #include <math.h>
@@ -13,8 +14,20 @@ int milliseconds( int ms ) {
 	return ms * 1000;
 }
 
+void error_handler( const char * file, int line, const char * function, int err, const char * fmt, ... ) {
+	printf( "error in %s at %s:%d\n", file, function, line );
+
+	va_list args;
+	va_start( args, fmt );
+	vprintf( fmt, args );
+	va_end( args );
+	printf( "\n" );
+}
+
 u8 memory[ megabytes( 64 ) ];
 int main( int argc, char ** argv ) {
+	snd_lib_error_set_handler( error_handler );
+
 	MemoryArena arena;
 	memarena_init( &arena, memory, sizeof( memory ) );
 
