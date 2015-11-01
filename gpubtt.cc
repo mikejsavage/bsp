@@ -74,7 +74,8 @@ void compute_horizons(
 			hull_size--;
 		}
 
-		horizons[ start.y * hm->width + start.x ] = angle( p, hull[ hull_size - 1 ] );
+		const float horizon = max_f( 0.0, angle( p, hull[ hull_size - 1 ] ) );
+		horizons[ start.y * hm->width + start.x ] = horizon;
 
 		hull[ hull_size ] = p;
 		hull_size++;

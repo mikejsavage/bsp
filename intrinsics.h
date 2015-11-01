@@ -43,6 +43,10 @@ inline constexpr size_t gigabytes( const size_t gb ) {
 	return megabytes( gb ) * 1024;
 }
 
+inline float max_f( float a, float b ) {
+	return a > b ? a : b;
+}
+
 inline u32 min_u32( u32 a, u32 b ) {
 	return a < b ? a : b;
 }
