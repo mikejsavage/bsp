@@ -1,10 +1,13 @@
+#include <stdlib.h>
 #include <stdarg.h>
-#include <assert.h>
-#include <alsa/asoundlib.h>
 #include <math.h>
+
+#include <alsa/asoundlib.h>
 
 #include "intrinsics.h"
 #include "wave.h"
+#include "assets.h"
+#include "audio.h"
 
 #define FRAMES 1024
 
@@ -22,6 +25,24 @@ static void error_handler( const char * file, int line, const char * function, i
 	printf( "\n" );
 }
 
+static Sound * make_sin_wave( u32 sample_rate, u32 frequency ) {
+	const u32 num_samples = sample_rate * ( 1.0f / frequency );
+
+	Sound * sound = ( Sound * ) malloc( sizeof( Sound ) );
+	sound->samples = ( s16 * ) malloc( num_samples * sizeof( s16 ) );
+
+	sound->num_samples = num_samples;
+	sound->sample_rate = sample_rate;
+	sound->num_channels = 1;
+
+	for( u32 i = 0; i < num_samples; i++ ) {
+		const float t = ( float ) i / num_samples;
+		sound->samples[ i ] = 0.25f * INT16_MAX * sinf( t * 2.0f * M_PI );
+	}
+
+	return sound;
+}
+
 static u8 memory[ megabytes( 64 ) ];
 int main( int argc, char ** argv ) {
 	snd_lib_error_set_handler( error_handler );
@@ -33,6 +54,11 @@ int main( int argc, char ** argv ) {
 	Sound sound;
 	bool ok = wave_decode( &arena, wave, &sound );
 	assert( ok );
+
+	Sound * sin_wave = make_sin_wave( sound.sample_rate, 200 );
+
+	audio_play_sound( &arena, sound );
+	audio_play_sound( &arena, *sin_wave, true );
 
 	const char * pcmname = argc == 2 ? argv[ 1 ] : "default";
 
@@ -61,16 +87,26 @@ int main( int argc, char ** argv ) {
 	// if (snd_output_stdio_attach(&log, stderr, 0) >= 0) {
 	// 	snd_pcm_dump(pcm, log); snd_output_close(log); }
 
-	for( u32 i = 0; i < sound.num_samples; ) {
-		s16 * channels[ 2 ] = { sound.samples + i, sound.samples + sound.num_samples + i };
+	s16 samples[ 4096 ];
+	AudioOutputBuffer buffer;
+	buffer.sample_rate = sound.sample_rate;
+	buffer.num_samples = array_count( samples );
+	buffer.samples = samples;
 
-		snd_pcm_sframes_t written = snd_pcm_writen( pcm, ( void ** ) channels, sound.num_samples - i );
-		if( written <= 0 ) {
-			snd_pcm_recover( pcm, written, 1 );
-			printf( "recovering: %s\n", snd_strerror( written ) );
-		}
-		else {
-			i += written;
+	while( true ) {
+		audio_fill_output_buffer( &buffer );
+
+		for( u32 i = 0; i < buffer.num_samples; ) {
+			// s16 * channels[ 2 ] = { sound.samples + i, sound.samples + sound.num_samples + i };
+			s16 * channels[ 2 ] = { buffer.samples + i, buffer.samples + i };
+
+			snd_pcm_sframes_t written = snd_pcm_writen( pcm, ( void ** ) channels, buffer.num_samples - i );
+			if( written <= 0 ) {
+				snd_pcm_recover( pcm, written, 1 );
+			}
+			else {
+				i += written;
+			}
 		}
 	}
 

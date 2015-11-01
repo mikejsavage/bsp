@@ -1,4 +1,4 @@
-all: medfall bsp.so hm.so pp btt.so
+all: medfall bsp.so hm.so btt.so pp sound
 
 MAINOBJS = main.o gl.o memory_arena.o
 
@@ -38,6 +38,9 @@ btt.so: $(COMMONOBJS) $(BTTOBJS)
 
 pp: $(PPOBJS)
 	$(CXX) $^ $(LDFLAGS) -o $@
+
+sound: linux_audio.o wave.o audio.o memory_arena.o
+	$(CXX) $^ -lasound -lm $(CXXFLAGS) -o $@
 
 clean:
 	rm -f medfall *.so pp *.o
