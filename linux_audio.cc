@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include <math.h>
 
 #include <alsa/asoundlib.h>
@@ -8,11 +9,43 @@
 #include "wave.h"
 #include "assets.h"
 #include "audio.h"
+#include "platform_thread.h"
 
 #define FRAMES 1024
 
 static int milliseconds( int ms ) {
 	return ms * 1000;
+}
+
+static u32 sample_rate;
+
+static void * mix_worker( void * data ) {
+	snd_pcm_t * pcm = ( snd_pcm_t * ) data;
+
+	s16 samples[ 4096 ];
+	AudioOutputBuffer buffer;
+	buffer.sample_rate = sample_rate;
+	buffer.num_samples = array_count( samples );
+	buffer.samples = samples;
+
+	while( true ) {
+		audio_mix( &buffer );
+
+		for( u32 i = 0; i < buffer.num_samples; ) {
+			// s16 * channels[ 2 ] = { sound.samples + i, sound.samples + sound.num_samples + i };
+			s16 * channels[ 2 ] = { buffer.samples + i, buffer.samples + i };
+
+			snd_pcm_sframes_t written = snd_pcm_writen( pcm, ( void ** ) channels, buffer.num_samples - i );
+			if( written <= 0 ) {
+				snd_pcm_recover( pcm, written, 1 );
+			}
+			else {
+				i += written;
+			}
+		}
+	}
+
+	return nullptr;
 }
 
 static void error_handler( const char * file, int line, const char * function, int err, const char * fmt, ... ) {
@@ -37,7 +70,7 @@ static Sound * make_sin_wave( u32 sample_rate, u32 frequency ) {
 
 	for( u32 i = 0; i < num_samples; i++ ) {
 		const float t = ( float ) i / num_samples;
-		sound->samples[ i ] = 0.25f * INT16_MAX * sinf( t * 2.0f * M_PI );
+		sound->samples[ i ] = INT16_MAX * sinf( t * 2.0f * M_PI );
 	}
 
 	return sound;
@@ -55,10 +88,13 @@ int main( int argc, char ** argv ) {
 	bool ok = wave_decode( &arena, wave, &sound );
 	assert( ok );
 
+	// TODO: remove this when the mixer can do resampling
+	sample_rate = sound.sample_rate;
+
 	Sound * sin_wave = make_sin_wave( sound.sample_rate, 200 );
 
 	audio_play_sound( &arena, sound );
-	audio_play_sound( &arena, *sin_wave, true );
+	PlayingSound * ps_sin = audio_play_sound( &arena, *sin_wave, true );
 
 	const char * pcmname = argc == 2 ? argv[ 1 ] : "default";
 
@@ -87,26 +123,24 @@ int main( int argc, char ** argv ) {
 	// if (snd_output_stdio_attach(&log, stderr, 0) >= 0) {
 	// 	snd_pcm_dump(pcm, log); snd_output_close(log); }
 
-	s16 samples[ 4096 ];
-	AudioOutputBuffer buffer;
-	buffer.sample_rate = sound.sample_rate;
-	buffer.num_samples = array_count( samples );
-	buffer.samples = samples;
+	Thread mix_thread;
+	thread_init( &mix_thread, mix_worker, pcm );
 
+	char * line = nullptr;
+	size_t n;
+
+	float volume = 0.1f;
+	audio_set_volume( ps_sin, volume );
 	while( true ) {
-		audio_fill_output_buffer( &buffer );
+		getline( &line, &n, stdin );
 
-		for( u32 i = 0; i < buffer.num_samples; ) {
-			// s16 * channels[ 2 ] = { sound.samples + i, sound.samples + sound.num_samples + i };
-			s16 * channels[ 2 ] = { buffer.samples + i, buffer.samples + i };
-
-			snd_pcm_sframes_t written = snd_pcm_writen( pcm, ( void ** ) channels, buffer.num_samples - i );
-			if( written <= 0 ) {
-				snd_pcm_recover( pcm, written, 1 );
-			}
-			else {
-				i += written;
-			}
+		if( strcmp( line, "+\n" ) == 0 ) {
+			volume += 0.1f;
+			audio_set_volume( ps_sin, volume );
+		}
+		else if( strcmp( line, "-\n" ) == 0 ) {
+			volume -= 0.1f;
+			audio_set_volume( ps_sin, volume );
 		}
 	}
 
