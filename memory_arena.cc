@@ -8,14 +8,15 @@ void memarena_init( MemoryArena * const arena, u8 * const memory, const size_t s
 }
 
 u8 * memarena_push_size( MemoryArena * const arena, const size_t size, const size_t alignment ) {
-	size_t base_index = align_TODO( arena->used, alignment );
-	size_t new_used = arena->used + size + ( base_index - arena->used );
+	size_t mem_addr = ( size_t ) arena->memory;
+	size_t aligned_addr = align_TODO( mem_addr + arena->used, alignment );
+	size_t new_used = size + ( aligned_addr - mem_addr );
 	assert( new_used <= arena->size );
 	assert( new_used >= arena->used );
 
 	arena->used = new_used;
 
-	return arena->memory + base_index;
+	return ( u8 * ) aligned_addr;
 }
 
 MemoryArena memarena_push_arena( MemoryArena * const arena, const size_t size ) {
